@@ -1,0 +1,93 @@
+import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
+
+/// A horizontal row (cards, chips, logos) that scrolls to the edge of the
+/// glass, under the status bar or the camera when they run down a side of
+/// the screen — the iPhone Duo closed, or open on its side — as it scrolls
+/// off the edge of a phone. Without it the row stops in a straight line
+/// beside the status bar, a card cut mid-word in the middle of the glass.
+///
+/// The row is widened by the side insets the page has left to it, and its
+/// list is padded by them as well ([padding]), so its first card still
+/// starts where the page's text does. On a phone held upright there are no
+/// side insets, and this is [child] as it is.
+///
+/// It needs a page that keeps its side insets inside its scroll view rather
+/// than around it — `SafeArea(left: false, right: false)` with the scroll
+/// view padded by [sides] — or the scroll view clips the row at the inset
+/// anyway.
+class EdgeBleed extends StatelessWidget {
+  const EdgeBleed({super.key, required this.child});
+
+  final Widget child;
+
+  /// The side insets of the glass at [context] — what a page pads its scroll
+  /// view by, and what a row under it reaches through.
+  static EdgeInsets sides(BuildContext context) {
+    // Per side of the glass, not by the reading direction: the status bar
+    // is where it is.
+    return MediaQuery.paddingOf(context).copyWith(top: 0, bottom: 0);
+  }
+
+  /// [base] with the [sides] added: the padding of a row's list, so its first
+  /// card lines up with the page and its last can scroll clear of the status
+  /// bar.
+  static EdgeInsetsGeometry padding(
+    BuildContext context,
+    EdgeInsetsGeometry base,
+  ) =>
+      base.add(sides(context));
+
+  @override
+  Widget build(BuildContext context) {
+    final sides = EdgeBleed.sides(context);
+    if (sides.horizontal == 0) return child;
+    return _Bleed(sides: sides, child: child);
+  }
+}
+
+/// [child] widened by [sides] past both edges, and as tall as it is: in a
+/// column that scrolls the height on offer has no end, and a box that took
+/// it all (an `OverflowBox`) would have no size at all.
+class _Bleed extends SingleChildRenderObjectWidget {
+  const _Bleed({required this.sides, required super.child});
+
+  final EdgeInsets sides;
+
+  @override
+  _RenderBleed createRenderObject(BuildContext context) => _RenderBleed(sides);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderBleed renderObject) {
+    renderObject.sides = sides;
+  }
+}
+
+class _RenderBleed extends RenderShiftedBox {
+  _RenderBleed(this._sides) : super(null);
+
+  EdgeInsets _sides;
+  set sides(EdgeInsets value) {
+    if (value == _sides) return;
+    _sides = value;
+    markNeedsLayout();
+  }
+
+  @override
+  void performLayout() {
+    final child = this.child;
+    if (child == null) {
+      size = constraints.smallest;
+      return;
+    }
+    final width = constraints.maxWidth + _sides.horizontal;
+    child.layout(
+      constraints.copyWith(minWidth: width, maxWidth: width),
+      parentUsesSize: true,
+    );
+    size = constraints.constrain(Size(constraints.maxWidth, child.size.height));
+    // The row's left edge at the glass's left edge: insets are per side of
+    // the glass, not by the reading direction.
+    (child.parentData! as BoxParentData).offset = Offset(-_sides.left, 0);
+  }
+}
