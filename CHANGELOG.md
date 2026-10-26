@@ -1,3 +1,14 @@
+## 0.3.0
+
+* `ListDetail`: a list beside the item picked from it on a wide window, the
+  item on a page of its own on a narrow one. The list keeps its state and
+  its scroll as the Duo opens and folds, and an item open beside it goes on
+  to its own page when the Duo is folded shut.
+* `DialogOffFold`: keeps a dialog off the fold, under it when it runs across
+  the screen and in the end half when it runs down it.
+* `FoldSplit` and `FoldRow`: two things compared side by side, one either
+  side of a fold down the window, the two as wide as each other.
+
 ## 0.2.0
 
 * An iOS plugin that asks iOS 27.1 about the iPhone Duo: the side of the

@@ -26,7 +26,8 @@ today. Nothing changes there.
 - [Widgets](#widgets): [`DuoScope`](#duoscope) ·
   [`SideTabBar`](#sidetabbar) · [`DuoAppBar`](#duoappbar) ·
   [`SideToolbar`](#sidetoolbar) · [`TwoPane`](#twopane) ·
-  [`EdgeBleed`](#edgebleed)
+  [`ListDetail`](#listdetail) · [`DialogOffFold`](#dialogofffold) ·
+  [`FoldSplit`](#foldsplit) · [`EdgeBleed`](#edgebleed)
 - [Reading the device](#reading-the-device): the hinge, the fold, the
   posture
 - [Helpers](#helpers): `context.barEdge`, window classes, even columns
@@ -104,6 +105,13 @@ And there are problems you can't see in that picture:
 - **Two panes at the fold.** `TwoPane` splits exactly where iOS says the
   fold is. Each pane is about a phone wide, and the crease cuts nothing. On
   an iPad it's simply half and half.
+- **List and detail, like Mail.** `ListDetail` opens an item beside its list
+  on the open Duo and on its own page on a phone. Fold the Duo shut and the
+  item you were reading goes on to its own page; the list keeps its scroll.
+- **Dialogs off the fold.** `DialogOffFold` keeps a dialog to one half, the
+  way Apple asks.
+- **Side-by-side comparisons.** `FoldSplit` and `FoldRow` put two things one
+  either side of the fold, as wide as each other.
 - **Rows that reach the glass.** `EdgeBleed` lets a horizontal row scroll
   under the column to the edge of the screen. Its first card still lines up
   with the page's text.
@@ -122,7 +130,7 @@ And there are problems you can't see in that picture:
 - **Works with `flutter_screenutil`**, or without it. `DuoDesignSize` gives
   the right `designSize` for every window.
 - **No dependencies** beyond Flutter.
-- **Tested.** 29 tests, and an example app to try on the simulator.
+- **Tested.** 43 tests, and an example app to try on the simulator.
 
 ## Install
 
@@ -134,7 +142,7 @@ dependencies:
   duo_layout:
     git:
       url: https://github.com/AbdulrahmanElsehemi/duo_layout.git
-      ref: v0.2.0
+      ref: v0.3.0
 ```
 
 Then run `flutter pub get`, and `pod install` in `ios/` if your app uses
@@ -507,6 +515,94 @@ Scaffold(
 - **Give it the whole width.** iOS gives the fold in the window's
   coordinates, so `TwoPane` splits at it only while it's as wide as the
   window. Put it straight in a `Scaffold` body, not inside padding.
+
+### `ListDetail`
+
+A list beside the item picked from it, on a window wide enough for two panes
+(`TwoPane.fits`), as Mail does. On a narrower window it's the list alone,
+and an item opens its own page.
+
+```dart
+ListDetail<Product>(
+  list: ProductList(
+    // Beside the list when there's room; its own page when there isn't.
+    onPick: (p) {
+      if (!ListDetail.open(context, p)) openProductPage(context, p);
+    },
+  ),
+  detail: (context, p) => ProductPage(p),
+  placeholder: const Center(child: Text('Pick a product')),
+  // The Duo was folded shut with an item open beside the list.
+  onNarrowed: openProductPage,
+  divider: BorderSide(color: Theme.of(context).dividerColor),
+)
+```
+
+- **`ListDetail.open(context, item)`** shows the item in the other pane and
+  returns `true`. It returns `false` on a narrow window, or outside a
+  `ListDetail`, so the caller opens the item its own way.
+- **`ListDetail.selectedOf<T>(context)`** is the item showing, so the list
+  can mark it.
+- **The detail is laid out as on a phone.** Its pane is its window, so a
+  page that splits on a wide window doesn't split again inside it.
+- **The list keeps its state.** It's the same widget on a narrow window and
+  in a pane, so its scroll and its state survive the Duo opening and
+  folding. Keep the `ListDetail` itself alive too: a shell that builds a
+  side tab bar on one window and a bottom one on another should keep its
+  pages under one `GlobalKey`, or every tab starts over.
+- **Folded shut**, the item open beside the list is handed to `onNarrowed`
+  to push, unless the list's route is covered or its tab isn't showing.
+- **`divider`**, `duration` and `curve` style the line between the panes and
+  the change from one item to the next. Reduced motion skips it.
+
+### `DialogOffFold`
+
+Keeps a dialog off the fold, as Apple asks: under a fold that runs across
+the screen (the Duo open upright, or stood as a tabletop), and in the end
+half beside one that runs down it (open on its side).
+
+```dart
+showDialog(
+  context: context,
+  builder: (context) => DialogOffFold(
+    child: AlertDialog(title: const Text('Delete this address?'), actions: ...),
+  ),
+);
+```
+
+- The half it's given is its window: the `MediaQuery` size is the half's,
+  and the insets the fold cuts away are dropped. A dialog that lays itself
+  out by the window's shape, like the date picker, fits it.
+- Wrap a date picker's `builder` the same way.
+- Without a fold it's the child as it is: centred on a phone or an iPad.
+
+### `FoldSplit`
+
+Two things compared side by side (two products, two plans), one either side
+of a fold down the window, as wide as each other. Lay every row of the
+comparison out with the same split, and the values line up under their
+headings.
+
+```dart
+final split = FoldSplit.of(
+  context,
+  // Where the rows' content starts, from each edge of the window.
+  margin: EdgeBleed.sides(context) + const EdgeInsets.symmetric(horizontal: 16),
+);
+...
+split == null
+    ? Row(children: [Expanded(child: a), Expanded(child: b)])
+    : FoldRow(split: split, start: a, end: b)
+```
+
+- `FoldSplit.of` is `null` without a fold down the window: on a phone, an
+  iPad, or the Duo open upright.
+- **`start`** is the width of the first one; **`gap`** is the space after
+  it, the fold and its margins in it. The end one takes the rest.
+- **Even widths.** The status bar's column takes room from one half, so both
+  take the narrower half's width, and the first is set back from the fold
+  rather than reaching it.
+- **Right to left.** The start one is on the right, and the split follows.
 
 ### `EdgeBleed`
 
@@ -936,8 +1032,9 @@ Tag a new version in this repository, then move `ref` in your app's
 - **Swift Package Manager.** The plugin ships a `Package.swift`, but it has
   only been built through CocoaPods so far.
 - **No "…" overflow menu yet.** Keep three or four buttons in the column.
-- **Bottom sheets and dialogs** are left to Flutter. On the open Duo, keep
-  them to one half yourself, using `DuoDevice.of(context).fold`.
+- **Bottom sheets** are left to Flutter. On the open Duo, keep them to one
+  half yourself, using `DuoDevice.of(context).fold`. Dialogs have
+  `DialogOffFold`.
 - **Android foldables** aren't read by the plugin. There, `barEdge` is
   always `null` and `DuoDevice` is unknown. `TwoPane`, `WindowClass` and
   `DuoBreakpoints` work on any wide window. Flutter's own
