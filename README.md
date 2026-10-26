@@ -1,82 +1,124 @@
-<div dir="rtl">
-
 # duo_layout
 
-**تصميمات الـ iPhone Duo في فلاتر، زي ما Apple بتطلبها بالظبط.**
+**iPhone Duo layouts for Flutter, drawn the way Apple's Human Interface
+Guidelines draw them.**
 
-package واحد بيخلي تطبيقك يتصرف على الـ iPhone Duo زي تطبيقات Apple نفسها:
+Add one widget to your app and swap a few others. On the iPhone Duo your app
+then behaves like Apple's own apps:
 
-- شريط التابات يقف على الجنب، ويصغر لما تسكرول.
-- أزرار الرجوع والإجراءات تقف في عمود الساعة.
-- الشاشة تتقسم نصين على الطيّة بالظبط.
-- الصفوف بتسكرول لحد حافة الزجاج.
+- The tab bar stands down the side of the screen and minimizes when you scroll.
+- Back and the toolbar buttons stand in the status bar's column, under the clock.
+- Two panes split exactly at the fold.
+- Horizontal rows of cards scroll all the way to the edge of the glass.
 
-وفي نفس الوقت **التطبيق نفسه ما بيتغيرش على الآيفون العادي والآيباد**.
+On an iPhone, an iPad and Android, the same code draws the app you have
+today. Nothing changes there.
 
-[English](README.en.md)
+![An iPhone, the iPhone Duo closed, and the iPhone Duo open on its side](doc/images/overview.png)
 
-![iPhone و iPhone Duo مقفول ومفتوح على جنبه](doc/images/overview.png)
+## Contents
 
----
+- [The problem](#the-problem)
+- [Features](#features)
+- [Install](#install)
+- [Quick start](#quick-start)
+- [Moving an existing app over](#moving-an-existing-app-over)
+- [Widgets](#widgets): [`DuoScope`](#duoscope) ·
+  [`SideTabBar`](#sidetabbar) · [`DuoAppBar`](#duoappbar) ·
+  [`SideToolbar`](#sidetoolbar) · [`TwoPane`](#twopane) ·
+  [`EdgeBleed`](#edgebleed)
+- [Helpers](#helpers): `context.barEdge`, window classes, even columns
+- [With `flutter_screenutil`](#with-flutter_screenutil)
+- [Testing your layouts](#testing-your-layouts)
+- [How it works](#how-it-works)
+- [Apple's rules this follows](#apples-rules-this-follows)
+- [FAQ](#faq)
+- [Limits](#limits)
+- [Example app](#example-app)
+- [Roadmap](#roadmap)
 
-## المشكلة اللي بيحلها
+## The problem
 
-الـ iPhone Duo جهاز بيتطوي زي الكتاب. له شاشة برا صغيرة (466×678)، وشاشة جوا كبيرة (669×951) لما يتفتح.
+The iPhone Duo folds like a book. It has two screens:
 
-الفرق الكبير عن أي آيفون: **الـ status bar مش فوق، دي نازلة على جنب الشاشة في عمود** (84 نقطة). ده بيحصل على الشاشة اللي برا دايماً، وعلى اللي جوا لما تمسكه بالعرض.
-
-تطبيق متعمل للموبايل العادي، لو اشتغل على الـ Duo من غير أي تعديل:
-
-![تطبيق موبايل عادي مقابل نفس التطبيق بـ duo_layout](doc/images/before_after.png)
-
-| من غير الـ package (الشمال) | بالـ package (اليمين) |
-|---|---|
-| عمود فاضي على اليمين، بيضيع 18% من عرض الشاشة | العمود بقى فيه الأزرار والتابات، زي iOS |
-| شريط التابات تحت بياكل من طول الشاشة القصيرة أصلاً | التابات في كبسولة على الجنب، والصفحة أخدت الطول كله |
-| أزرار الإشعارات والسلة لازقة جنب الكاميرا | الأزرار تحت الساعة في المكان اللي Apple محدداه |
-| صف المنتجات بيقف في نص الشاشة كأنه مقطوع | الصف بيسكرول لحد حافة الزجاج |
-
-ومشاكل تانية ما بتبانش في الصورة:
-
-- **الـ Duo المفتوح بيفضل واقف بالطول وما بيلفش.** iOS بيفضل يبلّغ عن مقاس الشاشة اللي برا حتى والجهاز مفتوح، فأي كود بيقفل الموبايل على الطول بيقفل الـ Duo المفتوح معاه.
-- **كل حاجة بتطلع أكبر بـ 15% على الشاشة اللي برا.** ده لو بتستخدم `flutter_screenutil`: بيكبّر على عرض الشاشة كله (466)، مع إن اللي متاح فعلاً للرسم 382 بس.
-- **محتوى بيقع على الطيّة نفسها:** نص بيتقطع، أو كارت بيتكسر في النص.
-- **مفيش أي معلومة رسمية:** فلاتر ما بيوصلوش أي حاجة عن الـ Duo على iOS، لا مكان الطيّة ولا مكان العمود. الـ package بيستنتج ده من الـ safe area، في مكان واحد.
-
----
-
-## الفايدة منه
-
-1. **سطر واحد للإعداد،** وبعدها كل widget بتشتغل لوحدها حسب الجهاز.
-2. **مفيش `if (isDuo)` في كل شاشة:** الـ widget نفسها بتقرر. على الموبايل `DuoAppBar` هي `AppBar` عادي، وعلى الـ Duo بتحط الأزرار على الجنب.
-3. **مكان واحد يتصلح:** الـ Duo جهاز جديد، والاستنتاج من الـ insets ممكن يحتاج تعديل لما Apple تحدّث iOS أو فلاتر يضيف دعم رسمي. التعديل هيبقى هنا، وكل المشاريع تاخده بـ `flutter pub upgrade`.
-4. **بيحترم العربي صح:** العمود بيفضل على نفس الجنب الحقيقي من الزجاج في العربي (زي ما Apple بتطلب)، والـ panes هي اللي بتبدّل أماكنها.
-5. **متجرّب:** 18 test بتغطي كل widget، ومعاه تطبيق example بيشتغل على الـ simulator.
-6. **من غير dependencies:** فلاتر بس. شغال مع `flutter_screenutil` أو من غيره.
-
----
-
-## فيه إيه
-
-| الـ Widget | بتعمل إيه | تستخدمها فين |
+| Screen | Size (points) | Where the status bar is |
 |---|---|---|
-| `DuoScope` | بتقرا مكان العمود قبل أي `SafeArea`، وبتسيب مسافة فوق، وبتظبط اتجاهات الدوران | مرة واحدة في `MaterialApp.builder` |
-| `SideTabBar` | كبسولة التابات في عمود الـ status bar، وبتصغر مع السكرول | الـ shell اللي فيه التابات |
-| `DuoAppBar` | `AppBar` بيحط زرار الرجوع والإجراءات في العمود | بدل `AppBar` في أي شاشة |
-| `SideToolbar` و`SideToolbarButton` | نفس فكرة `DuoAppBar` لأي header معمول بإيدك | لو عندك header خاص بيك |
-| `TwoPane` | بيقسم الشاشة نصين على الطيّة بالظبط | قائمة جنب تفاصيل، صورة جنب بيانات، سلة جنب الإجمالي |
-| `EdgeBleed` | صف أفقي بيسكرول لحد حافة الزجاج | صفوف الكروت والـ chips واللوجوهات |
-| `context.barEdge` | العمود على أنهي جنب، أو `null` | لو عايز تقرر حاجة بنفسك |
-| `WindowClass` و`DuoBreakpoints` | مقاسات الشاشة، وعدد أعمدة زوجي عشان الطيّة | الـ grids |
-| `DuoDesignSize` | مقاس التصميم الصح لـ `flutter_screenutil`، واتجاهات الدوران | لو بتستخدم screenutil |
+| Outer (closed) | 466 × 678 | Down the right side, in an 84-point column |
+| Inner, held upright | 669 × 951 | Along the top, like any phone |
+| Inner, on its side | 951 × 669 | Down the right side, in an 84-point column |
 
----
+So on the outer screen, and on the inner one held on its side, the status bar
+is **a column down the side** instead of a strip along the top. An app built
+for a phone doesn't know that:
 
-## التركيب
+![A phone layout next to the same app with duo_layout](doc/images/before_after.png)
 
-الريبو private، فلازم يكون عندك صلاحية عليه على GitHub. ضيف ده في `pubspec.yaml`:
+| A phone layout | With duo_layout |
+|---|---|
+| An empty column takes 18% of the width | The column holds the toolbar and the tabs, as in iOS |
+| A bottom tab bar eats into an already short screen | The tabs float in a capsule down the side |
+| The bell and the bag squeeze in beside the clock | The buttons stand under the clock, where Apple puts them |
+| A row of cards stops in a straight line mid-screen | The row scrolls to the edge of the glass |
 
-</div>
+And there are problems you can't see in that picture:
+
+- **The open Duo stays locked upright.** iOS keeps reporting the outer
+  screen's size while the Duo is open. Code that locks phones to portrait
+  locks the open Duo too.
+- **`Info.plist` blocks it as well.** The Duo is an iPhone. If the iPhone's
+  orientations list only portrait, iOS never lets the open Duo turn, whatever
+  your code asks for.
+- **With `flutter_screenutil`, everything is 15% too big** on the outer
+  screen. It scales by the whole 466-point width, not the 382 points beside
+  the column.
+- **Content lands on the fold.** A three-column grid puts its middle card
+  right on the crease.
+- **Headers hit the rounded corner.** With the status bar down the side, iOS
+  reports no top inset at all.
+- **Flutter gets nothing from iOS about the Duo:** no display features, no
+  fold position, no column. Every app has to work it out from the safe area.
+  This package does it once, in one place.
+
+## Features
+
+- **One line of setup.** Wrap your app in `DuoScope`, and every widget below
+  adapts by itself.
+- **No `if (isDuo)` in your screens.** `DuoAppBar` is a plain `AppBar` on a
+  phone and moves its buttons to the column on the Duo. `SideTabBar` is just
+  its child when there's no column. You write each screen once.
+- **The tab bar Apple asks for.** A capsule of icons at the foot of the
+  column. It shrinks to the current tab when you scroll down, and opens again
+  when you scroll up or tap it.
+- **A toolbar in the column.** Back (or Close on a full-screen dialog) on
+  top, your actions under it. The buttons belong to their screen: they hide
+  when it's covered or its tab isn't showing, and fade with the route.
+- **Two panes at the fold.** `TwoPane` splits at the middle of the window,
+  which is exactly where the open Duo folds. Each pane is about a phone wide,
+  and the crease cuts nothing. On an iPad it's simply half and half.
+- **Rows that reach the glass.** `EdgeBleed` lets a horizontal row scroll
+  under the column to the edge of the screen. Its first card still lines up
+  with the page's text.
+- **Even columns.** `DuoBreakpoints.columns(..., even: true)` gives an even
+  number of grid columns, so the fold falls between two cards.
+- **Orientation that works.** Phones stay upright; tablets and the open Duo
+  turn every way. The lock follows the device as it opens and closes.
+- **Right to left done right.** In Arabic or Hebrew the column stays on the
+  same physical side of the glass, as Apple asks. The content mirrors, and in
+  `TwoPane` the panes swap.
+- **Accessible.** Icon-only tabs and buttons still carry labels and tooltips
+  for screen readers. Tap targets are 44 points, Apple's minimum. Animations
+  are skipped when the system asks for reduced motion.
+- **Themed by default.** Colours come from your `ColorScheme`, and every
+  size, colour and timing can be overridden.
+- **Works with `flutter_screenutil`**, or without it. `DuoDesignSize` gives
+  the right `designSize` for every window.
+- **No dependencies** beyond Flutter.
+- **Tested.** 18 widget tests, and an example app to try on the simulator.
+
+## Install
+
+The repository is private, so you need read access to it on GitHub. So does
+anyone, or any CI, that builds your app.
 
 ```yaml
 dependencies:
@@ -86,54 +128,31 @@ dependencies:
       ref: v0.1.0
 ```
 
-<div dir="rtl">
+Then run `flutter pub get`.
 
-بعدها شغّل `flutter pub get`.
+Pin `ref` to a tag, not a branch. Then a new commit never changes your app
+until you move the tag yourself.
 
-> **ثبّت `ref` على tag** (زي `v0.1.0`)، عشان أي تعديل جديد في الريبو ما يغيّرش مشروعك فجأة. لما تحب تاخد التحديث، غيّر الـ tag بنفسك.
+It needs Dart 3.6 and Flutter 3.27 or later.
 
----
+## Quick start
 
-## الإعداد: خطوتين
-
-### 1. `DuoScope` في الـ builder
-
-</div>
+**1. Put `DuoScope` above the navigator,** in `MaterialApp.builder`:
 
 ```dart
+import 'package:duo_layout/duo_layout.dart';
+
 MaterialApp(
   builder: (context, child) => DuoScope(child: child!),
   home: const Shell(),
 )
 ```
 
-<div dir="rtl">
+If your app already has a builder, make `DuoScope` the outermost widget in
+it. It works the same with `MaterialApp.router`.
 
-لو عندك builder بالفعل (toasts أو connection banner أو غيره)، خلّي `DuoScope` هو اللي برا خالص:
-
-</div>
-
-```dart
-builder: (context, child) => DuoScope(
-  child: ToastWrapper(child: child!),
-),
-```
-
-<div dir="rtl">
-
-`DuoScope` بيعمل 3 حاجات:
-
-- بيقرا مكان العمود من الـ insets الأصلية. أي `SafeArea` في الشاشة بيخفيها عن اللي تحته، عشان كده لازم يتقري من فوق.
-- لما العمود يكون على الجنب، iOS بيدي inset فوق = صفر، فالـ headers بتلزق في حافة الزجاج المدورة. عشان كده بيضيف مسافة 24 على الأقل فوق.
-- بيقفل الموبايل على الطول، ويسيب الآيباد والـ Duo المفتوح يلفوا براحتهم (`lockPhonesUpright: true`). لو تطبيقك بيظبط الاتجاهات بنفسه، اقفل دي.
-
-### 2. `Info.plist`: الاتجاهات بالعرض
-
-**دي أهم خطوة، ولو نسيتها الـ Duo المفتوح عمره ما هيلف.** الـ Duo بيعتبر نفسه iPhone، وiOS بيعمل تقاطع بين الـ `Info.plist` وبين اللي فلاتر بيطلبه. فلو `Info.plist` فيه Portrait بس، مفيش أي كود هيقدر يلفّه.
-
-في `ios/Runner/Info.plist`:
-
-</div>
+**2. Allow landscape in `ios/Runner/Info.plist`.** iOS combines this list with
+what your app asks for. With portrait only, the open Duo can never turn.
 
 ```xml
 <key>UISupportedInterfaceOrientations</key>
@@ -144,52 +163,197 @@ builder: (context, child) => DuoScope(
 </array>
 ```
 
-<div dir="rtl">
+Regular iPhones still stay upright, because `DuoScope` locks them from code.
+This change needs a full rebuild: hot reload and hot restart won't pick it up.
 
-الموبايل العادي هيفضل بالطول، لأن `DuoScope` بيقفله من الكود. بعد التعديل ده لازم build كامل، الـ hot reload مش كفاية.
-
----
-
-## الاستخدام
-
-### شريط التابات: `SideTabBar`
-
-![التابات على الجنب، بتصغر مع السكرول، والصفحة المفتوحة](doc/images/closed.png)
-
-حط الصفحات جوا `SideTabBar`، وخلّي الـ bottom bar بتاعك يظهر بس لما `SideTabBar.show` تكون `false`:
-
-</div>
+**3. Use the widgets in your screens:**
 
 ```dart
+// The tab shell.
 Scaffold(
   body: SideTabBar(
     tabs: const [
       SideTab(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-      SideTab(icon: Icon(Icons.storefront_outlined), label: 'Shop'),
-      SideTab(icon: Icon(Icons.person_outline), label: 'Profile'),
+      SideTab(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
     ],
     currentIndex: index,
     onTap: (i) => setState(() => index = i),
     child: IndexedStack(index: index, children: pages),
   ),
-  bottomNavigationBar: SideTabBar.show(context)
-      ? null
-      : NavigationBar(/* the bottom bar you already have */),
+  bottomNavigationBar: SideTabBar.show(context) ? null : NavigationBar(/* ... */),
+)
+
+// Any screen with a bar.
+Scaffold(
+  appBar: DuoAppBar(
+    title: const Text('Product'),
+    actions: [
+      DuoAction(icon: const Icon(Icons.ios_share), tooltip: 'Share', onPressed: share),
+    ],
+  ),
+  body: ...,
 )
 ```
 
-<div dir="rtl">
+That's it. Run the app on the iPhone Duo simulator, then fold, open and turn
+it.
 
-- **أيقونات بس:** العمود ضيق، وApple بتطلب أيقونات من غير كلام. الـ `label` مش بيترسم، بس الـ screen reader بيقراه.
-- **بيصغر مع السكرول:** لما تسكرول لتحت، الكبسولة بتصغر للتاب اللي أنت فيه بس، زي iOS بالظبط. لما تسكرول لفوق أو تدوس عليها بترجع تفتح. تقدر تقفل ده بـ `minimizeOnScroll: false`.
-- **الشكل:** بياخد ألوانه من الـ `ColorScheme`، أو تحدد ألوانك بـ `style: SideTabBarStyle(...)`.
-- **ما بياخدش من طول الصفحة:** الكبسولة مرسومة فوق العمود، والعمود الصفحة سايباه فاضي أصلاً.
+## Moving an existing app over
 
-### الـ header: `DuoAppBar`
+A checklist for an app that already runs on phones:
 
-بدل `AppBar`:
+1. **Setup.** Add `DuoScope` and the `Info.plist` orientations (see
+   [Quick start](#quick-start)).
+2. **Orientation code.** If you call `SystemChrome.setPreferredOrientations`
+   yourself, you can delete it and keep `DuoScope`'s default. Or pass
+   `DuoScope(lockPhonesUpright: false)` and lock with
+   `DuoDesignSize.orientationsFor(screen, window: window)`. Don't lock to
+   portrait from `main()`, because that also locks the open Duo.
+3. **The tab shell.** Wrap the tab pages in `SideTabBar`, and hide your bottom
+   bar when `SideTabBar.show(context)` is true.
+4. **App bars.** Replace `AppBar` with `DuoAppBar`, and turn `IconButton`
+   actions into `DuoAction`s. Move buttons with words (Cancel, Done, Add to
+   bag) out of `actions`, into the page or a bottom bar.
+5. **Custom headers.** Wrap them in `SideToolbar`, and leave their buttons out
+   when `SideToolbar.show(context)` is true.
+6. **Horizontal rows.** Wrap each one in `EdgeBleed`. Pad the page's scroll
+   view with `EdgeBleed.padding` instead of a side `SafeArea`.
+7. **Grids.** Count columns with `DuoBreakpoints.columns(..., even: true)`.
+8. **Wide screens.** Where a list opens a detail page, show both with
+   `TwoPane` when `TwoPane.fits(context)`.
+9. **Scaling.** If you use `flutter_screenutil`, switch to
+   [`DuoDesignSize`](#with-flutter_screenutil).
 
-</div>
+You can do steps 3 to 9 one screen at a time. Every widget is a no-op on a
+phone, so a half-moved app still looks exactly as it did there.
+
+## Widgets
+
+### `DuoScope`
+
+The one widget everything else needs. It goes once, above the navigator.
+
+```dart
+MaterialApp(
+  builder: (context, child) => DuoScope(child: child!),
+)
+```
+
+What it does:
+
+- **Finds the column.** It reads the window's safe area before any screen's
+  `SafeArea` hides it, and hands the result down. Every other widget in the
+  package reads it from there.
+- **Keeps room at the top.** With the column down the side, iOS reports no
+  top inset at all, and headers would touch the rounded corner. `DuoScope`
+  keeps at least `minTopInset` points there.
+- **Sets orientations.** With `lockPhonesUpright`, phones stay upright, while
+  tablets and the open Duo turn every way. It checks again whenever the
+  window changes, so the Duo locks upright as soon as it closes.
+
+| Parameter | Default | What it does |
+|---|---|---|
+| `child` | required | Your app (the navigator) |
+| `minTopInset` | `24` | The least room at the top when the status bar is down a side; as tall as iPadOS's status bar |
+| `lockPhonesUpright` | `true` | Sets orientations from the screen size. Turn it off if your app sets them itself |
+
+### `SideTabBar`
+
+![Tabs down the side; minimized after a scroll; a pushed page](doc/images/closed.png)
+
+The tab bar Apple draws on the Duo: a capsule of icons at the foot of the
+status bar's column. Where the status bar runs along the top, it's just its
+`child`, and your own bottom bar shows instead.
+
+```dart
+class Shell extends StatefulWidget {
+  const Shell({super.key});
+
+  @override
+  State<Shell> createState() => _ShellState();
+}
+
+class _ShellState extends State<Shell> {
+  var index = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    void select(int i) => setState(() => index = i);
+    return Scaffold(
+      body: SideTabBar(
+        tabs: const [
+          SideTab(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+          SideTab(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: 'Shop'),
+          SideTab(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+        ],
+        currentIndex: index,
+        onTap: select,
+        child: IndexedStack(
+          index: index,
+          children: const [HomePage(), ShopPage(), ProfilePage()],
+        ),
+      ),
+      bottomNavigationBar: SideTabBar.show(context)
+          ? null
+          : NavigationBar(
+              selectedIndex: index,
+              onDestinationSelected: select,
+              destinations: const [/* the same tabs */],
+            ),
+    );
+  }
+}
+```
+
+How it behaves:
+
+- **Icons only.** The column is too narrow for words, and Apple asks for
+  icons. `label` isn't drawn, but screen readers read it.
+- **Minimizes on scroll.** Scrolling any page under it down shrinks the
+  capsule to the current tab. Scrolling up, tapping the tab or changing tab
+  opens it again. A tap on the minimized capsule only opens it; it doesn't
+  switch tabs.
+- **Takes no height.** It's drawn over the column the pages already keep
+  clear of, so your pages don't lose any room.
+- **Stays on its side.** In a right-to-left language it stays on the same
+  physical side as the status bar.
+
+| `SideTabBar` parameter | Default | What it does |
+|---|---|---|
+| `tabs` | required | A `SideTab` for each tab |
+| `currentIndex` | required | The tab showing |
+| `onTap` | required | Called with the index of the tab tapped |
+| `child` | required | The pages |
+| `minimizeOnScroll` | `true` | Shrinks to the current tab on scroll down |
+| `style` | `SideTabBarStyle()` | Colours, sizes and timing |
+
+`SideTab(icon, selectedIcon, label)`: `selectedIcon` is optional and replaces
+`icon` on the current tab.
+
+`SideTabBarStyle` lets you match your design. Colours left `null` come from
+the theme:
+
+| Field | Default |
+|---|---|
+| `backgroundColor` | `ColorScheme.surface` |
+| `indicatorColor` (the disc behind the current tab) | `ColorScheme.secondaryContainer` |
+| `selectedColor` | `ColorScheme.onSecondaryContainer` |
+| `unselectedColor` | `ColorScheme.onSurfaceVariant` |
+| `borderColor` | `ColorScheme.outlineVariant` |
+| `shadow` | a soft shadow |
+| `itemSize` | `44` (Apple's minimum tap target) |
+| `iconSize` | `24` |
+| `spacing` (between tabs) | `4` |
+| `padding` (inside the capsule) | `4` |
+| `bottomGap` (above the home indicator) | `16` |
+| `duration`, `curve` | `280 ms`, `Curves.easeInOutCubic` |
+
+`SideTabBar.show(context)` is true when the tabs are down the side. That's
+when to leave your own bottom bar out.
+
+### `DuoAppBar`
+
+An `AppBar` that knows about the column.
 
 ```dart
 Scaffold(
@@ -200,69 +364,143 @@ Scaffold(
       DuoAction(icon: const Icon(Icons.favorite_border), tooltip: 'Save', onPressed: save),
     ],
   ),
+  body: ...,
 )
 ```
 
-<div dir="rtl">
+- **With the status bar along the top** (phones, iPad, the Duo open upright),
+  it's a plain `AppBar`, with the back button and the actions as
+  `IconButton`s.
+- **With the status bar down the side,** Back and then the actions stand in
+  the column under the clock. The bar keeps only its title, from the start
+  edge.
+- **Back or Close.** It shows Back when the route can be popped, and Close on
+  a full-screen dialog, just as `AppBar` does.
+- **The buttons belong to their screen.** They hide while another route
+  covers the screen or while its tab isn't the one showing, and they fade in
+  and out with the route.
 
-- **على الموبايل والآيباد والـ Duo المفتوح بالطول:** `AppBar` عادي بنفس الأزرار.
-- **على الـ Duo المقفول أو المفتوح بالعرض:** زرار الرجوع (أو Close في الـ fullscreen dialog) فوق، والإجراءات تحته في العمود تحت الساعة. الـ AppBar نفسه بيفضل فيه العنوان بس، من البداية.
-- **الأزرار ماشية مع الشاشة:** بتختفي لما صفحة تانية تغطيها، أو لما التاب بتاعها مش ظاهر، وبتعمل fade مع الـ route.
-- **الأزرار اللي فيها كلام** (زي "إلغاء" أو "أضف للحقيبة") ما تحطهاش في `actions`. Apple بتقول الأزرار اللي فيها نص تفضل أفقي، فحطها في الصفحة أو في bottom bar.
+| Parameter | Default | What it does |
+|---|---|---|
+| `title` | required | The bar's title |
+| `actions` | `[]` | `DuoAction`s: icon buttons only |
+| `automaticallyImplyLeading` | `true` | Shows Back or Close when the route can be left |
+| `backgroundColor` | theme | The bar's colour |
+| `centerTitle` | theme | Ignored in the column, where the title starts from the start edge |
 
-لو الـ header بتاعك متعمل بإيدك، استخدم `SideToolbar` مباشرة:
+`DuoAction(icon, tooltip, onPressed)`: the tooltip shows on a long press and
+is what screen readers read, so always set it.
 
-</div>
+Keep buttons with words out of `actions`. Apple keeps text buttons in
+horizontal bars on the Duo too.
+
+### `SideToolbar`
+
+The same as `DuoAppBar`, for a header you built yourself.
 
 ```dart
 Widget build(BuildContext context) {
   final side = SideToolbar.show(context);
-  final back = side
-      ? SideToolbarButton(icon: const BackButtonIcon(), tooltip: 'Back', onPressed: pop)
-      : IconButton(icon: const BackButtonIcon(), onPressed: pop);
   return SideToolbar(
-    items: [if (side) back],
-    child: MyHeader(leading: side ? null : back, title: title),
+    items: [
+      SideToolbarButton(
+        icon: const Icon(Icons.arrow_back),
+        tooltip: 'Back',
+        onPressed: () => Navigator.pop(context),
+      ),
+      SideToolbarButton(icon: const Icon(Icons.share), tooltip: 'Share', onPressed: share),
+    ],
+    child: MyHeader(
+      title: 'Linen Sofa',
+      // In the column, the header draws only its title.
+      showButtons: !side,
+    ),
   );
 }
 ```
 
-<div dir="rtl">
+`items` are drawn in an overlay, in the column the page keeps clear of, so
+they take none of the header's height. Where there's no column, it's just
+`child`.
 
-### نصين على الطيّة: `TwoPane`
+| `SideToolbar` parameter | Default | What it does |
+|---|---|---|
+| `items` | required | Top to bottom: Back or Close first, then the actions |
+| `child` | required | Your header, without those buttons |
+| `spacing` | `8` | The gap between the buttons |
+| `top` | `SideToolbar.defaultTop(window)` | Where the first button starts, from the top of the window: 160 on the outer screen, 104 on the inner one |
 
-![قائمة المنتجات جنب المنتج، وبالعربي](doc/images/two_panes.png)
+`SideToolbarButton` is a raised round button, the way iOS draws the buttons
+it puts in the column. That keeps it readable over whatever scrolls under it.
 
-</div>
+| `SideToolbarButton` parameter | Default |
+|---|---|
+| `icon`, `tooltip`, `onPressed` | required |
+| `size` | `44` |
+| `iconSize` | `20` |
+| `backgroundColor`, `foregroundColor` | from the `ColorScheme` |
+
+### `TwoPane`
+
+![Shop: the list beside the product; a product: the photo beside its details](doc/images/two_panes.png)
+
+Two panes side by side, split down the middle of the window.
 
 ```dart
-body: TwoPane.fits(context)
-    ? TwoPane(start: ProductList(onPick: pick), end: ProductDetails(picked))
-    : ProductList(onPick: (p) => push(ProductPage(p))),
+// A list that opens the item beside it on a wide window,
+// and pushes a page on a phone.
+Widget build(BuildContext context) {
+  final list = ProductList(
+    selected: selected,
+    onPick: (p) => TwoPane.fits(context)
+        ? setState(() => selected = p)
+        : Navigator.push(context, MaterialPageRoute(builder: (_) => ProductPage(p))),
+  );
+  if (!TwoPane.fits(context)) return list;
+  return TwoPane(start: list, end: ProductDetails(selected));
+}
 ```
 
-<div dir="rtl">
+```dart
+// One page in two halves: the photo on one side of the fold, the details on the other.
+Scaffold(
+  appBar: DuoAppBar(title: Text(product.name)),
+  body: TwoPane.fits(context)
+      ? TwoPane(start: ProductPhoto(product), end: ProductDetails(product))
+      : Column(children: [ProductPhoto(product), Expanded(child: ProductDetails(product))]),
+)
+```
 
-- **مكان القسمة:** بالظبط في نص الشاشة، وده مكان طيّة الـ Duo المفتوح بالعرض. يعني ولا pane بيتكسر، وكل واحد عرضه تقريباً عرض موبايل. على الآيباد هو بس نص ونص.
-- **`TwoPane.fits`:** بترجع `true` من عرض 840 وطالع (الـ Duo المفتوح بالعرض، والآيباد بالعرض).
-- **الـ insets:** كل pane بيتجنب حافته هو بس، وبياخد الـ insets الخاصة بيها.
-- **مين ياخد العمود:** الـ pane اللي جنب العمود بس هو اللي أزراره بتروح للعمود. التاني أزراره بتفضل فوقه، جنب المحتوى اللي بتأثر فيه (قاعدة Apple للـ split view).
-- **في العربي:** الـ panes بتبدّل أماكنها، والعمود بيفضل مكانه. في الصورة على اليمين، أزرار المنتج فضلت فوقه في الشريط لأنه بقى بعيد عن العمود.
-- **لازم ياخد الشاشة كلها:** iOS ما بيقولش الطيّة فين، فالقسمة معتمدة إن الـ panes واخدين عرض الشاشة كله. حط `TwoPane` في `body` الـ Scaffold، مش جوا حاجة عليها padding.
+- **Where it splits.** At the middle of the window, which is where the open
+  Duo folds when held on its side. On an iPad it's half and half.
+- **When it fits.** `TwoPane.fits(context)` is true from 840 points wide
+  (`WindowClass.expanded`): the open Duo on its side, or an iPad in
+  landscape.
+- **Each pane can be a full `Scaffold`**, with its own `DuoAppBar`.
+- **Insets.** Each pane keeps clear of its own edge of the glass only, not
+  the other pane's.
+- **Who gets the column.** Only the pane beside the column gives its buttons
+  to it. The other pane keeps them in a bar above its content, next to what
+  they act on, as Apple does in split views.
+- **Right to left.** `start` is on the left in English and on the right in
+  Arabic. The column stays where it is.
+- **Give it the whole width.** iOS doesn't say where the fold is, so the
+  split relies on `TwoPane` being as wide as the window. Put it straight in a
+  `Scaffold` body, not inside padding.
 
-### صفوف لحد الحافة: `EdgeBleed`
+### `EdgeBleed`
 
-الصفحة بتسيب الـ side insets جوا الـ scroll view بدل ما تلفها في `SafeArea`، والصف بيتلف في `EdgeBleed`:
-
-</div>
+A horizontal row (cards, chips, logos) that scrolls under the column to the
+edge of the glass, the way it scrolls off the edge of a phone. Without it,
+the row stops in a straight line beside the column.
 
 ```dart
 ListView(
-  // The page's text keeps clear of the column...
+  // The page keeps its side insets inside the scroll view...
   padding: EdgeBleed.padding(context, const EdgeInsets.all(16)),
   children: [
     const Text('Picks for you'),
-    // ...and the row reaches through it to the edge of the glass.
+    // ...so the row can reach through them.
     EdgeBleed(
       child: SizedBox(
         height: 176,
@@ -277,43 +515,116 @@ ListView(
 )
 ```
 
-<div dir="rtl">
+- `EdgeBleed` widens its child by the side insets, past both edges.
+- `EdgeBleed.padding(context, base)` is `base` plus the side insets. Use it
+  for the page's scroll view, and again for the row's own list. Then the
+  first card lines up with the page's text, and the last can scroll clear of
+  the column.
+- `EdgeBleed.sides(context)` is the side insets alone.
+- **Don't wrap the page's scroll view in a side `SafeArea`.** It clips the
+  row at the inset. If you need one for the top and bottom, use
+  `SafeArea(left: false, right: false)`.
+- On an upright phone there are no side insets, so it changes nothing.
 
-- **النتيجة:** أول كارت بيبدأ على نفس خط نص الصفحة، والصف بيسكرول من تحت العمود لحد آخر الزجاج، زي ما بيخرج من حافة أي موبايل.
-- **على الموبايل بالطول:** مفيش side insets، فـ `EdgeBleed` بيرجّع الصف زي ما هو.
-- **جوا `Column` بتسكرول:** شغال عادي، لأنه بياخد طول الصف بس. `OverflowBox` كان بيبوظ هنا.
+## Helpers
 
-### أعمدة زوجية عشان الطيّة
-
-![الـ Duo مفتوح بالطول (bars عادية) وبالعرض (bars على الجنب وأعمدة زوجية)](doc/images/open.png)
-
-</div>
+### `context.barEdge`
 
 ```dart
-final columns = DuoBreakpoints.columns(width, tile: 150, gap: 12, even: true);
+switch (context.barEdge) {
+  case BarEdge.left:
+  case BarEdge.right:
+    // The status bar runs down that side of the glass.
+  case null:
+    // It runs along the top: a phone, an iPad, the Duo open upright.
+}
 ```
 
-<div dir="rtl">
+Use it for your own decisions, for example to hide a floating button that
+would sit under the tab capsule. The `DuoContext` extension also gives you:
 
-Apple بتطلب عدد أعمدة زوجي على الـ Duo، عشان الطيّة تيجي بين عمودين ومتقطعش كارت. `even: true` بتنزّل أي عدد فردي واحد.
+| Getter | What it is |
+|---|---|
+| `context.barEdge` | `BarEdge.left`, `BarEdge.right`, or `null` |
+| `context.windowClass` | `compact`, `medium` or `expanded`, from the width |
+| `context.windowInsets` | The window's own insets, even under a `SafeArea` |
+| `context.windowSize` | The window's size |
 
-### بالعربي
+`BarEdge.of(EdgeInsets)` does the same from any insets, for code without a
+`BuildContext`.
 
-![نفس الشاشة بالإنجليزي والعربي: العمود فضل على اليمين](doc/images/arabic.png)
+### Window classes
 
-مش محتاج تعمل أي حاجة. العمود حقيقي على الزجاج، فبيفضل على نفس الجنب في العربي (Apple بتطلب كده). المحتوى بيتعكس عادي.
+Material's window size classes, with the Duo's screens in them:
 
-### مع `flutter_screenutil`
+| `WindowClass` | Width | Examples |
+|---|---|---|
+| `compact` | under 600 | A phone, the Duo closed |
+| `medium` | 600 to 839 | An iPad in portrait, the Duo open upright |
+| `expanded` | 840 and up | An iPad in landscape, the Duo open on its side |
 
-لو التصميم معمول على frame موبايل (390×844 مثلاً)، استخدم `DuoDesignSize.forWindow` بدل الـ `designSize` الثابت:
+`DuoBreakpoints.medium` (600) and `DuoBreakpoints.expanded` (840) are the
+same widths as constants.
 
-- **الشاشة اللي برا:** بيكبّر على العرض اللي جنب العمود، فمفيش تكبير زيادة 15%.
-- **الآيباد والـ Duo المفتوح:** بيرسم نقط التصميم زي ما هي، والشاشة بتعرض حاجات أكتر في الصف بدل ما الموبايل يتنفخ.
-- **لما الجهاز يتفتح أو يتقفل:** المقاس بيتحسب تاني من غير ما التطبيق يتبني من الأول. الفورم اللي نصها متملي واللسته اللي متسكرولة بيفضلوا زي ما هما.
+### Even columns
 
-</div>
+![The Duo open upright, and on its side](doc/images/open.png)
 
 ```dart
+LayoutBuilder(
+  builder: (context, constraints) {
+    final columns = DuoBreakpoints.columns(
+      constraints.maxWidth,
+      tile: 150, // the narrowest a card may be
+      gap: 12,
+      even: true,
+    );
+    return GridView.count(crossAxisCount: columns, children: cards);
+  },
+)
+```
+
+`columns` returns how many tiles at least `tile` points wide fit across the
+width, and never fewer than `min` (2 by default). With `even: true`, an odd
+count drops by one. On the open Duo the fold then falls between two columns
+instead of through a card.
+
+## With `flutter_screenutil`
+
+Say your designs are drawn on a phone frame (390 × 844, for example) and
+scaled with `flutter_screenutil`. A fixed `designSize` goes wrong on the Duo:
+
+- **On the outer screen** it scales by the full 466 points, though only 382
+  are beside the column. Everything comes out 15% too big.
+- **On the open Duo or an iPad** it blows the phone design up instead of
+  showing more.
+
+`DuoDesignSize.forWindow` picks the design size for the window you're in:
+
+- **On a phone or the outer screen**, it scales by the width beside the
+  column, up to `maxPhoneScale` (1.15).
+- **On a tablet or the open Duo**, it draws the design's points 1:1, so the
+  layout shows more per row instead of growing. It never counts the height
+  as less than `minHeight` (700), so a short, wide window doesn't shrink the
+  text.
+
+```dart
+final size = DuoDesignSize.forWindow(
+  windowSize,
+  phoneFrame: const Size(390, 844), // your Figma frame
+  insets: windowInsets,
+);
+```
+
+`ScreenUtilInit` reads its `designSize` once, so it has to be rebuilt when
+the Duo opens or closes. Copy this widget into your app, and use it in place
+of `ScreenUtilInit` above your `MaterialApp`:
+
+```dart
+import 'package:duo_layout/duo_layout.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 class WindowScreenUtil extends StatefulWidget {
   const WindowScreenUtil({super.key, required this.child});
   final Widget child;
@@ -365,97 +676,167 @@ class _WindowScreenUtilState extends State<WindowScreenUtil>
 }
 ```
 
-<div dir="rtl">
+When the Duo opens or closes, the app redraws at the new size without
+restarting. A half-filled form or a scrolled list stays as it was.
 
-وحط `WindowScreenUtil` مكان `ScreenUtilInit` فوق الـ `MaterialApp`.
+If you set orientations yourself, `DuoDesignSize.orientationsFor(screen,
+window: window)` returns the ones `DuoScope` would use.
 
----
+## Testing your layouts
 
-## إزاي بيعرف إنه على الـ Duo
+You don't need the simulator to test the Duo. In a widget test, give the test
+view the Duo's size and insets:
 
-فلاتر على iOS **ما بيوصلوش أي معلومة** عن الـ Duo: لا `displayFeatures`، ولا مكان الطيّة، ولا مكان العمود. فالـ package بيستنتج من الـ safe area:
+```dart
+testWidgets('the share button moves to the column on the iPhone Duo', (tester) async {
+  // The outer screen: 466 × 678, with the status bar down the right.
+  tester.view
+    ..devicePixelRatio = 1
+    ..physicalSize = const Size(466, 678)
+    ..padding = const FakeViewPadding(right: 84, bottom: 34)
+    ..viewPadding = const FakeViewPadding(right: 84, bottom: 34);
+  addTearDown(tester.view.reset);
 
-> لو inset جنب واحد أكبر من الـ inset اللي فوق، والجنب التاني صفر، يبقى الـ status bar نازل على الجنب ده.
+  await tester.pumpWidget(MaterialApp(
+    builder: (context, child) => DuoScope(lockPhonesUpright: false, child: child!),
+    home: const ProductPage(),
+  ));
 
-| الجهاز | الـ insets | النتيجة |
+  final share = tester.getCenter(find.bySemanticsLabel('Share'));
+  expect(share.dx, greaterThan(466 - 84)); // in the column
+});
+```
+
+The screens to test on:
+
+| Screen | `physicalSize` | `FakeViewPadding` |
 |---|---|---|
-| iPhone بالطول | top 47، bottom 34 | `null`: bars عادية |
-| iPhone بالعرض | left 47، right 47 | `null`: الجنبين متساويين (notch وحواف) |
-| iPad | top 24، bottom 20 | `null` |
-| Duo مفتوح بالطول | top، bottom | `null`: bars عادية، زي ما Apple بتقول |
-| Duo مقفول (466×678) | right 84، bottom 34 | `BarEdge.right` |
-| Duo مفتوح بالعرض (951×669) | right 84، bottom 34 | `BarEdge.right` |
+| iPhone | `Size(390, 844)` | `top: 47, bottom: 34` |
+| Duo closed | `Size(466, 678)` | `right: 84, bottom: 34` |
+| Duo open upright | `Size(669, 951)` | `top: 44, bottom: 34` |
+| Duo open on its side | `Size(951, 669)` | `right: 84, bottom: 34` |
 
-ده كله في `BarEdge.of` في ملف واحد. لو Apple غيرت الأرقام، أو فلاتر ضاف API رسمي، التعديل هيبقى هناك بس.
+Pass `lockPhonesUpright: false` in tests, so `DuoScope` doesn't call the
+orientation platform channel.
 
-### قواعد Apple اللي الـ package ماشي عليها
+## How it works
 
-من [Designing for iPhone Duo](https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo):
+Flutter on iOS gets nothing about the Duo: no `displayFeatures`, no fold, no
+column. The only sign is the safe area, and `BarEdge.of` reads it:
 
-- **مكان العمود:** الـ tab bar والـ toolbar وزرار الرجوع بيقفوا في عمود الـ status bar، على الشاشة اللي برا دايماً، وعلى اللي جوا بالعرض. جوا بالطول الـ bars بتفضل أفقي.
-- **الترتيب:** الرجوع أو الإغلاق فوق، بعده الإجراءات، والتابات تحت في كبسولة أيقونات.
-- **في اللغات اللي من اليمين:** العمود بيفضل على نفس الجنب الحقيقي من الزجاج.
-- **لما الصفحة تسكرول:** شريط التابات بيصغر.
-- **الأزرار اللي فيها نص** بتفضل في bars أفقية.
-- **في الـ split view:** الـ pane اللي جنب العمود بس هو اللي بيدّي أزراره للعمود.
-- **مع الطيّة:** أعمدة زوجية، ومفيش إعادة ترتيب كبيرة لما الجهاز يتطوي أو يتفتح.
+> When one side is inset deeper than the top, and the other side isn't inset
+> at all, the status bar runs down that side.
 
----
+| Device | Insets | `barEdge` |
+|---|---|---|
+| iPhone, upright | top 47, bottom 34 | `null` |
+| iPhone, on its side | left 47, right 47 | `null`: both sides are inset, for the notch and corners |
+| iPad | top 24, bottom 20 | `null` |
+| Duo, open upright | top, bottom | `null`: the bars stay across, as Apple says |
+| Duo, closed | right 84, bottom 34 | `right` |
+| Duo, open on its side | right 84, bottom 34 | `right` |
 
-## حدود لازم تعرفها
+A screen can't read this itself, because the `SafeArea` around its header has
+already taken the insets away from everything under it. That's why `DuoScope`
+reads them once, above the navigator, and hands them down in an
+`InheritedWidget` (`BarEdgeScope`).
 
-- **مكان أول زرار في العمود** (`SideToolbar.defaultTop`): 160 على الشاشة اللي برا و104 جوا. iOS ما بيديش رقم، فدول متقاسين على الـ simulator (iOS 27.1). لو اختلفوا على الجهاز الحقيقي، عدّلهم بـ `top:`.
-- **وضع "نص مفتوح" زي اللابتوب:** مش مدعوم، لأن فلاتر ما بيعرفش زاوية الفتح على iOS.
-- **قائمة "…" للأزرار اللي مش لاقية مكان في العمود:** لسه مش موجودة. حط في العمود 3 أزرار أو 4 بالكتير.
-- **أندرويد:** الـ foldables على أندرويد ما عندهاش عمود جانبي، فـ `barEdge` بيبقى `null` والتطبيق بيتصرف عادي. `TwoPane` و`WindowClass` شغالين على أي شاشة عريضة.
+All of this lives in one file, `bar_edge.dart`. If Apple changes the numbers
+or Flutter adds an official API, that's the only place to change, and every
+app picks the fix up with a new tag.
 
----
+## Apple's rules this follows
 
-## جرّبه
+From
+[Designing for iPhone Duo](https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo):
 
-</div>
+- **Bars in the column.** The tab bar, the toolbar and Back stand in the
+  status bar's column: always on the outer screen, and on the inner one when
+  it's held on its side. Held upright, the inner screen keeps its bars
+  across.
+- **Order.** Back or Close at the top, then the actions, and the tabs at the
+  foot in a capsule of icons.
+- **Right to left.** The column stays on the same physical side of the glass.
+- **Scrolling.** The tab bar minimizes as the content scrolls.
+- **Text buttons** stay in horizontal bars.
+- **Split views.** Only the pane beside the column gives its buttons to it.
+- **The fold.** Use an even number of columns, and don't rearrange the whole
+  layout when the device folds or opens.
+
+## FAQ
+
+**Does it change anything on a normal iPhone, an iPad or Android?**
+No. Without a side column, every widget gives back exactly what you'd have
+drawn without it: `DuoAppBar` is an `AppBar`, `SideTabBar` is its child, and
+`EdgeBleed` is its child. `TwoPane` only appears where you check
+`TwoPane.fits`. The one visible change is `lockPhonesUpright`, which keeps
+phones in portrait. Turn it off if you lock orientations yourself.
+
+**Does it work with go_router, auto_route or `MaterialApp.router`?**
+Yes. `DuoScope` goes in the `builder`, which every router setup has.
+
+**Does it work with Bloc, Riverpod or Provider?**
+Yes. It holds none of your state: you pass in the current tab and get `onTap`
+back.
+
+**The open Duo won't turn to landscape.**
+Check that `Info.plist` lists the landscape orientations, and do a full
+rebuild. Then check that nothing else in your app locks portrait, such as a
+call in `main()` or another package.
+
+**The buttons in the column sit too high or too low.**
+`SideToolbar.defaultTop` was measured on the simulator. If a real device
+differs, pass `top:` to `SideToolbar`.
+
+**Can I keep my own bottom bar design?**
+Yes. `SideTabBar` only replaces it on the Duo. Everywhere else your own bar
+shows, as before.
+
+**How do I update?**
+Tag a new version in this repository, then move `ref` in your app's
+`pubspec.yaml` and run `flutter pub get`.
+
+## Limits
+
+- **Where the column's first button sits.** iOS gives no figure for it, so
+  `SideToolbar.defaultTop` (160 on the outer screen, 104 on the inner) was
+  measured on the iOS 27.1 simulator.
+- **No half-open (laptop) posture.** Flutter can't read the hinge angle on
+  iOS.
+- **No "…" overflow menu yet.** Keep three or four buttons in the column.
+- **Bottom sheets and dialogs** are left to Flutter. On the open Duo, keep
+  them to one half yourself if they'd sit across the fold.
+- **Android foldables** have no side column, so `barEdge` is always `null`
+  there. `TwoPane`, `WindowClass` and `DuoBreakpoints` work on any wide
+  window.
+
+## Example app
+
+`example/` is a small shop with four tabs, built with every widget in the
+package. Run it on an iPhone, an iPad and the iPhone Duo simulator. Then fold,
+open and turn the Duo to see the same screens change:
 
 ```bash
 cd example
 flutter run -d "iPhone Duo"
 ```
 
-<div dir="rtl">
+Run the package's own tests with `flutter test` from the repository root.
 
-- **تقفل وتفتح الجهاز:** من الـ Simulator نفسه.
-- **تلف الجهاز:** بـ ⌘← أو ⌘→.
-
-تشغيل الـ tests:
-
-</div>
-
-```bash
-flutter test
-```
-
-<div dir="rtl">
-
-### الصور اللي في الـ README
-
-الصور مرسومة من تطبيق الـ example في frames، ومتولّدة بـ golden tests. لو غيّرت حاجة في الشكل، ولّدها تاني:
-
-</div>
+A golden test draws the pictures in this README from the example app. To
+redraw them, run this on a Mac, since it loads San Francisco from macOS:
 
 ```bash
 cd example
 flutter test test/screenshots_test.dart --update-goldens
 ```
 
-<div dir="rtl">
+## Roadmap
 
-لازم تتولّد على Mac، لأنها بتحمّل خط San Francisco من macOS.
+- [ ] A "…" overflow menu for the column
+- [ ] Hero images that extend under the column
+- [ ] Switch to an official API once Flutter offers one
 
----
+## License
 
-## الخطوات الجاية
-
-- [ ] قائمة "…" للأزرار اللي مش لاقية مكان في العمود
-- [ ] الصور الكبيرة (hero) تكمل لحد تحت العمود
-- [ ] استبدال الاستنتاج من الـ insets بـ API رسمي، أول ما فلاتر يوفّره
-
-</div>
+MIT. See [LICENSE](LICENSE).

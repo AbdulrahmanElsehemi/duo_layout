@@ -160,7 +160,7 @@ class _SystemUi extends StatelessWidget {
               height: fold == Axis.horizontal ? 2 : size.height,
               child: const ColoredBox(color: Color(0x22000000)),
             ),
-          if (edge == null) ...[
+          if (edge == null)
             Positioned(
               top: 0,
               left: 0,
@@ -176,21 +176,8 @@ class _SystemUi extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-            if (screen.size.width < 600)
-              Positioned(
-                top: 11,
-                left: size.width / 2 - 62,
-                width: 124,
-                height: 36,
-                child: const DecoratedBox(
-                  decoration: ShapeDecoration(
-                    color: Colors.black,
-                    shape: StadiumBorder(),
-                  ),
-                ),
-              ),
-          ] else
+            )
+          else
             Positioned(
               top: 0,
               bottom: 0,
@@ -202,19 +189,7 @@ class _SystemUi extends StatelessWidget {
                       : screen.insets.right,
               child: Column(
                 children: [
-                  // The camera, on the outer screen.
-                  if (size.width < 600)
-                    Container(
-                      margin: const EdgeInsets.only(top: 14, bottom: 14),
-                      width: 34,
-                      height: 76,
-                      decoration: const ShapeDecoration(
-                        color: Colors.black,
-                        shape: StadiumBorder(),
-                      ),
-                    )
-                  else
-                    const SizedBox(height: 18),
+                  const SizedBox(height: 18),
                   const Text('9:41', style: style),
                   const SizedBox(height: 4),
                   Row(
@@ -473,25 +448,18 @@ void main() {
       'two_panes',
       canvas([
         device(openSide, app(tab: 1), label: 'Shop: the list | the product'),
-        device(
-          openSide,
-          app(locale: const Locale('ar'), tab: 1),
-          label: 'Arabic: the panes swap, the column stays',
-        ),
+        device(openSide, app(), label: 'A product: the photo | the details'),
       ]),
       size: room,
-    );
-  });
-
-  testWidgets('arabic', (tester) async {
-    await shoot(
-      tester,
-      'arabic',
-      canvas([
-        device(outer, app(), label: 'English'),
-        device(outer, app(locale: const Locale('ar')), label: 'العربية'),
-      ]),
-      size: room,
+      before:
+          () => tester.tap(
+            find
+                .descendant(
+                  of: find.byType(DemoApp).at(1),
+                  matching: find.text('Linen Sofa'),
+                )
+                .first,
+          ),
     );
   });
 }
