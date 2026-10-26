@@ -27,6 +27,8 @@ today. Nothing changes there.
   [`SideTabBar`](#sidetabbar) · [`DuoAppBar`](#duoappbar) ·
   [`SideToolbar`](#sidetoolbar) · [`TwoPane`](#twopane) ·
   [`EdgeBleed`](#edgebleed)
+- [Reading the device](#reading-the-device): the hinge, the fold, the
+  posture
 - [Helpers](#helpers): `context.barEdge`, window classes, even columns
 - [With `flutter_screenutil`](#with-flutter_screenutil)
 - [Testing your layouts](#testing-your-layouts)
@@ -75,14 +77,21 @@ And there are problems you can't see in that picture:
   right on the crease.
 - **Headers hit the rounded corner.** With the status bar down the side, iOS
   reports no top inset at all.
-- **Flutter gets nothing from iOS about the Duo:** no display features, no
-  fold position, no column. Every app has to work it out from the safe area.
-  This package does it once, in one place.
+- **Flutter passes on nothing iOS knows about the Duo:** no hinge, no fold,
+  no column. iOS 27.1 has the APIs, but only native code can call them. This
+  package's iOS plugin calls them for you.
 
 ## Features
 
 - **One line of setup.** Wrap your app in `DuoScope`, and every widget below
   adapts by itself.
+- **It asks iOS.** A small iOS plugin reads iOS 27.1's own APIs: which side
+  the status bar's column is on, the hinge angle, and where the fold and the
+  camera are. Before iOS 27.1, and off iOS, it falls back to reading the safe
+  area, so nothing breaks.
+- **Half-open postures.** `DuoDevice.of(context).posture` tells you when the
+  Duo is held like a book or stood on a table, so you can lay out around the
+  bend.
 - **No `if (isDuo)` in your screens.** `DuoAppBar` is a plain `AppBar` on a
   phone and moves its buttons to the column on the Duo. `SideTabBar` is just
   its child when there's no column. You write each screen once.
@@ -92,9 +101,9 @@ And there are problems you can't see in that picture:
 - **A toolbar in the column.** Back (or Close on a full-screen dialog) on
   top, your actions under it. The buttons belong to their screen: they hide
   when it's covered or its tab isn't showing, and fade with the route.
-- **Two panes at the fold.** `TwoPane` splits at the middle of the window,
-  which is exactly where the open Duo folds. Each pane is about a phone wide,
-  and the crease cuts nothing. On an iPad it's simply half and half.
+- **Two panes at the fold.** `TwoPane` splits exactly where iOS says the
+  fold is. Each pane is about a phone wide, and the crease cuts nothing. On
+  an iPad it's simply half and half.
 - **Rows that reach the glass.** `EdgeBleed` lets a horizontal row scroll
   under the column to the edge of the screen. Its first card still lines up
   with the page's text.
@@ -113,7 +122,7 @@ And there are problems you can't see in that picture:
 - **Works with `flutter_screenutil`**, or without it. `DuoDesignSize` gives
   the right `designSize` for every window.
 - **No dependencies** beyond Flutter.
-- **Tested.** 18 widget tests, and an example app to try on the simulator.
+- **Tested.** 29 tests, and an example app to try on the simulator.
 
 ## Install
 
@@ -125,15 +134,21 @@ dependencies:
   duo_layout:
     git:
       url: https://github.com/AbdulrahmanElsehemi/duo_layout.git
-      ref: v0.1.0
+      ref: v0.2.0
 ```
 
-Then run `flutter pub get`.
+Then run `flutter pub get`, and `pod install` in `ios/` if your app uses
+CocoaPods.
 
 Pin `ref` to a tag, not a branch. Then a new commit never changes your app
 until you move the tag yourself.
 
-It needs Dart 3.6 and Flutter 3.27 or later.
+It needs Flutter 3.44 or later.
+
+The hinge, the fold and the camera regions come from the iOS 27.1 SDK, so
+build with Xcode 27.1 or later to get them. An app built with an older Xcode
+still builds and runs: the plugin answers that it knows nothing, and the
+package reads the safe area instead.
 
 ## Quick start
 
@@ -241,9 +256,13 @@ MaterialApp(
 
 What it does:
 
-- **Finds the column.** It reads the window's safe area before any screen's
-  `SafeArea` hides it, and hands the result down. Every other widget in the
-  package reads it from there.
+- **Asks iOS about the device.** The column's side, the hinge, the fold and
+  the camera, through the plugin. It asks again whenever the window changes,
+  and iOS tells it when the hinge moves or the column changes side.
+- **Finds the column.** It takes the side iOS gives, and checks it against
+  the window's safe area, which it reads before any screen's `SafeArea` hides
+  it. Without iOS's answer, it guesses from the safe area alone. Every other
+  widget in the package reads the result from there.
 - **Keeps room at the top.** With the column down the side, iOS reports no
   top inset at all, and headers would touch the rounded corner. `DuoScope`
   keeps at least `minTopInset` points there.
@@ -428,7 +447,7 @@ they take none of the header's height. Where there's no column, it's just
 | `items` | required | Top to bottom: Back or Close first, then the actions |
 | `child` | required | Your header, without those buttons |
 | `spacing` | `8` | The gap between the buttons |
-| `top` | `SideToolbar.defaultTop(window)` | Where the first button starts, from the top of the window: 160 on the outer screen, 104 on the inner one |
+| `top` | `SideToolbar.topOf(context)` | Where the first button starts, from the top of the window: 8 points under the region iOS keeps for the camera and the clock (182 on the outer screen, 132 on the inner one, on the simulator). Before iOS 27.1, `SideToolbar.defaultTop(window)`: 160 and 104 |
 
 `SideToolbarButton` is a raised round button, the way iOS draws the buttons
 it puts in the column. That keeps it readable over whatever scrolls under it.
@@ -471,8 +490,9 @@ Scaffold(
 )
 ```
 
-- **Where it splits.** At the middle of the window, which is where the open
-  Duo folds when held on its side. On an iPad it's half and half.
+- **Where it splits.** At the fold iOS reports, on the open Duo held on its
+  side. Elsewhere, and before iOS 27.1, down the middle, which is where the
+  Duo folds anyway. On an iPad it's half and half.
 - **When it fits.** `TwoPane.fits(context)` is true from 840 points wide
   (`WindowClass.expanded`): the open Duo on its side, or an iPad in
   landscape.
@@ -484,9 +504,9 @@ Scaffold(
   they act on, as Apple does in split views.
 - **Right to left.** `start` is on the left in English and on the right in
   Arabic. The column stays where it is.
-- **Give it the whole width.** iOS doesn't say where the fold is, so the
-  split relies on `TwoPane` being as wide as the window. Put it straight in a
-  `Scaffold` body, not inside padding.
+- **Give it the whole width.** iOS gives the fold in the window's
+  coordinates, so `TwoPane` splits at it only while it's as wide as the
+  window. Put it straight in a `Scaffold` body, not inside padding.
 
 ### `EdgeBleed`
 
@@ -525,6 +545,68 @@ ListView(
   row at the inset. If you need one for the top and bottom, use
   `SafeArea(left: false, right: false)`.
 - On an upright phone there are no side insets, so it changes nothing.
+
+## Reading the device
+
+`DuoDevice.of(context)` is what iOS says about the device. It rebuilds your
+widget when anything in it changes.
+
+```dart
+final device = DuoDevice.of(context);
+
+device.hinge;      // Hinge(angle: 112.0, status: HingeStatus.partiallyOpen), or null
+device.fold;       // the fold, a ReservedRegion, or null
+device.occlusions; // the camera and the status bar
+device.posture;    // DuoPosture.closed, tabletop, book or flat, or null
+device.fromIOS;    // false before iOS 27.1, off iOS and in tests
+```
+
+| Field | What it is |
+|---|---|
+| `hinge.angle` | Degrees: 0 folded shut, 180 flat |
+| `hinge.status` | `closed`, `partiallyOpen`, `fullyOpen` or `unknown` |
+| `fold.frame` | The fold with the room iOS asks tappable content to keep from it |
+| `fold.rect` | The crease itself, without that room |
+| `fold.isActive` | True while the Duo is partly folded. Flat, the fold is still there, as a line to keep cards off |
+| `fold.axis` | `Axis.vertical` when the fold runs from top to bottom: the Duo held on its side |
+| `occlusions` | Regions iOS keeps for the camera and the status bar. `isActive` is false for one that isn't on this screen |
+| `posture` | From the hinge and the way the fold runs: `tabletop` is partly open with the fold across the screen, `book` with the fold from top to bottom |
+
+All of these are in the window's coordinates, the same logical pixels as
+Flutter's.
+
+`DuoDevice.of(context)` rebuilds your widget every time the hinge moves,
+which is many times a second while the Duo folds. A layout that only needs
+the fold, the camera or the column should read
+`DuoDevice.regionsOf(context)` instead: it has everything but the hinge,
+and rebuilds only when those change. `TwoPane` and `SideToolbar` read it
+that way.
+
+### A tabletop layout
+
+A common layout for a half-open Duo: content on the upper half, controls
+on the half that lies on the table.
+
+```dart
+Widget build(BuildContext context) {
+  final device = DuoDevice.of(context);
+  final fold = device.fold;
+  if (device.posture != DuoPosture.tabletop || fold == null) {
+    return const Player(); // the usual layout
+  }
+  return Column(
+    children: [
+      SizedBox(height: fold.frame.top, child: const Video()),
+      SizedBox(height: fold.frame.height), // the bend
+      const Expanded(child: PlayerControls()),
+    ],
+  );
+}
+```
+
+Use the hinge for effects and interactions, and the fold for layout. iOS
+sends the angle as often as it likes, so if you only need to know whether
+the Duo is half open, read `hinge.status` or `posture`.
 
 ## Helpers
 
@@ -719,10 +801,60 @@ The screens to test on:
 Pass `lockPhonesUpright: false` in tests, so `DuoScope` doesn't call the
 orientation platform channel.
 
+In tests the plugin isn't there, so `DuoDevice.of(context)` is
+`DuoDevice.unknown` and the column comes from the safe area. To test with
+iOS's answer, for example a half-open hinge, run as iOS and answer the
+plugin's channels yourself:
+
+```dart
+debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+final device = {
+  'available': true,
+  'barEdge': 'right',
+  'hinge': {'angle': 110.0, 'status': 'partiallyOpen'},
+  'folds': [
+    {'frame': [455.5, 0.0, 40.0, 669.0], 'margins': [0.0, 20.0, 0.0, 20.0], 'active': true},
+  ],
+  'occlusions': [],
+};
+final messenger = tester.binding.defaultBinaryMessenger;
+messenger.setMockMethodCallHandler(const MethodChannel('duo_layout'), (_) async => device);
+messenger.setMockStreamHandler(
+  const EventChannel('duo_layout/changes'),
+  MockStreamHandler.inline(onListen: (_, events) => events.success(device)),
+);
+// ... pump, expect ...
+debugDefaultTargetPlatformOverride = null;
+```
+
 ## How it works
 
-Flutter on iOS gets nothing about the Duo: no `displayFeatures`, no fold, no
-column. The only sign is the safe area, and `BarEdge.of` reads it:
+Flutter passes on nothing iOS knows about the Duo. iOS 27.1 has APIs for
+it, and the package's iOS plugin calls them on the Flutter view:
+
+| iOS API | What the package does with it |
+|---|---|
+| `traitCollection.verticalBarEdge` | `context.barEdge`: which side the column is on |
+| `UIHingeInteraction` | `DuoDevice.hinge` and `posture` |
+| `reservedRegions(kind: .division)` | `DuoDevice.fold`, and where `TwoPane` splits |
+| `reservedRegions(kind: .occlusion)` | `DuoDevice.occlusions`, and where `SideToolbar` starts |
+
+The plugin sends a snapshot when `DuoScope` asks, which it does whenever the
+window changes, and sends it again when the hinge moves or the column
+changes side. iOS lays the status bar out again a moment after the window
+changes, and the region it keeps for it grows (on the outer screen from 84
+points tall to 174), with nothing to tell the app. So `DuoScope` asks once
+more after 600 ms.
+
+iOS gives the column as leading or trailing, in the app's own reading
+direction. The plugin turns that into a side of the glass, left or right,
+because that's how the package uses it.
+
+### The fallback
+
+Before iOS 27.1, in an app built with an older Xcode, on Android and in
+widget tests, there is no answer from iOS. `BarEdge.of` then guesses from
+the safe area:
 
 > When one side is inset deeper than the top, and the other side isn't inset
 > at all, the status bar runs down that side.
@@ -732,18 +864,17 @@ column. The only sign is the safe area, and `BarEdge.of` reads it:
 | iPhone, upright | top 47, bottom 34 | `null` |
 | iPhone, on its side | left 47, right 47 | `null`: both sides are inset, for the notch and corners |
 | iPad | top 24, bottom 20 | `null` |
-| Duo, open upright | top, bottom | `null`: the bars stay across, as Apple says |
+| Duo, open upright | top 82, bottom 34 | `null`: the bars stay across, as Apple says |
 | Duo, closed | right 84, bottom 34 | `right` |
 | Duo, open on its side | right 84, bottom 34 | `right` |
 
-A screen can't read this itself, because the `SafeArea` around its header has
-already taken the insets away from everything under it. That's why `DuoScope`
-reads them once, above the navigator, and hands them down in an
-`InheritedWidget` (`BarEdgeScope`).
+Even with iOS's answer, the package keeps a column only where the safe area
+leaves room for it.
 
-All of this lives in one file, `bar_edge.dart`. If Apple changes the numbers
-or Flutter adds an official API, that's the only place to change, and every
-app picks the fix up with a new tag.
+A screen can't read the safe area itself, because the `SafeArea` around its
+header has already taken the insets away from everything under it. That's
+why `DuoScope` reads them once, above the navigator, and hands them down in
+an `InheritedWidget` (`BarEdgeScope`), together with the device.
 
 ## Apple's rules this follows
 
@@ -785,8 +916,9 @@ rebuild. Then check that nothing else in your app locks portrait, such as a
 call in `main()` or another package.
 
 **The buttons in the column sit too high or too low.**
-`SideToolbar.defaultTop` was measured on the simulator. If a real device
-differs, pass `top:` to `SideToolbar`.
+From iOS 27.1 they start under the region iOS reports for the clock and
+camera. Before that, `SideToolbar.defaultTop` was measured on the simulator.
+Either way, you can pass `top:` to `SideToolbar`.
 
 **Can I keep my own bottom bar design?**
 Yes. `SideTabBar` only replaces it on the Duo. Everywhere else your own bar
@@ -798,17 +930,18 @@ Tag a new version in this repository, then move `ref` in your app's
 
 ## Limits
 
-- **Where the column's first button sits.** iOS gives no figure for it, so
-  `SideToolbar.defaultTop` (160 on the outer screen, 104 on the inner) was
-  measured on the iOS 27.1 simulator.
-- **No half-open (laptop) posture.** Flutter can't read the hinge angle on
-  iOS.
+- **The hinge, the fold and the camera need iOS 27.1,** and an app built
+  with Xcode 27.1 or later. Before that, `DuoDevice` is unknown, `TwoPane`
+  splits down the middle, and `SideToolbar` uses its measured positions.
+- **Swift Package Manager.** The plugin ships a `Package.swift`, but it has
+  only been built through CocoaPods so far.
 - **No "…" overflow menu yet.** Keep three or four buttons in the column.
 - **Bottom sheets and dialogs** are left to Flutter. On the open Duo, keep
-  them to one half yourself if they'd sit across the fold.
-- **Android foldables** have no side column, so `barEdge` is always `null`
-  there. `TwoPane`, `WindowClass` and `DuoBreakpoints` work on any wide
-  window.
+  them to one half yourself, using `DuoDevice.of(context).fold`.
+- **Android foldables** aren't read by the plugin. There, `barEdge` is
+  always `null` and `DuoDevice` is unknown. `TwoPane`, `WindowClass` and
+  `DuoBreakpoints` work on any wide window. Flutter's own
+  `MediaQuery.displayFeaturesOf` has the hinge on Android.
 
 ## Example app
 
@@ -835,7 +968,8 @@ flutter test test/screenshots_test.dart --update-goldens
 
 - [ ] A "…" overflow menu for the column
 - [ ] Hero images that extend under the column
-- [ ] Switch to an official API once Flutter offers one
+- [ ] Opt a screen out of the vertical bar (`preferredVerticalBarBehavior`)
+- [ ] Android foldables, from `MediaQuery.displayFeaturesOf`
 
 ## License
 

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import 'duo_device.dart';
 import 'window_class.dart';
 
 /// The side of the glass the status bar runs down, when it runs down one:
@@ -19,12 +20,24 @@ enum BarEdge {
   /// bar runs along the top — and on a phone on its side, which is inset the
   /// same on both sides for its notch and its rounded corners.
   ///
-  /// iOS tells an app nothing more direct than this: Flutter gets no display
-  /// features on iOS, so the safe area is the only sign of the column.
+  /// The guess [resolve] falls back to where iOS says nothing: before iOS
+  /// 27.1, off iOS, and in widget tests.
   static BarEdge? of(EdgeInsets padding) {
     if (padding.left > padding.top && padding.right == 0) return left;
     if (padding.right > padding.top && padding.left == 0) return right;
     return null;
+  }
+
+  /// The side iOS puts the column on ([DuoDevice.barEdge]) when it says, and
+  /// only where [padding] leaves room for it; otherwise [of] guesses from
+  /// [padding] alone.
+  static BarEdge? resolve(EdgeInsets padding, DuoDevice device) {
+    if (!device.fromIOS) return of(padding);
+    return switch (device.barEdge) {
+      left when padding.left > 0 => left,
+      right when padding.right > 0 => right,
+      _ => null,
+    };
   }
 }
 
@@ -35,18 +48,27 @@ enum BarEdge {
 /// above the navigator; a pane away from the status bar (the far pane of a
 /// `TwoPane`) turns it [BarEdgeScope.off], so its controls stay above it, as
 /// Apple's guide keeps a leading pane's.
-class BarEdgeScope extends InheritedWidget {
+///
+/// The hinge is an aspect of its own: it moves many times a second while
+/// the Duo folds, and only what reads it rebuilds then.
+class BarEdgeScope extends InheritedModel<Object> {
   const BarEdgeScope({
     super.key,
     required this.edge,
     required this.insets,
     required this.window,
+    this.device = DuoDevice.unknown,
     required super.child,
   });
 
-  /// From the window's own [data], before any screen takes its insets.
-  BarEdgeScope.of(MediaQueryData data, {super.key, required super.child})
-      : edge = BarEdge.of(data.viewPadding),
+  /// From the window's own [data], before any screen takes its insets, and
+  /// what iOS says about the [device].
+  BarEdgeScope.of(
+    MediaQueryData data, {
+    super.key,
+    this.device = DuoDevice.unknown,
+    required super.child,
+  })  : edge = BarEdge.resolve(data.viewPadding, device),
         insets = data.viewPadding,
         window = data.size;
 
@@ -54,7 +76,8 @@ class BarEdgeScope extends InheritedWidget {
   BarEdgeScope.off(BuildContext context, {super.key, required super.child})
       : edge = null,
         insets = maybeOf(context)?.insets ?? EdgeInsets.zero,
-        window = maybeOf(context)?.window ?? Size.zero;
+        window = maybeOf(context)?.window ?? Size.zero,
+        device = maybeOf(context)?.device ?? DuoDevice.unknown;
 
   /// Where the column is; null where the bars stay across the top and foot.
   final BarEdge? edge;
@@ -65,12 +88,34 @@ class BarEdgeScope extends InheritedWidget {
   /// The window's size.
   final Size window;
 
-  static BarEdgeScope? maybeOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<BarEdgeScope>();
+  /// What iOS says about the device: the hinge, the fold, the camera.
+  final DuoDevice device;
+
+  static const _layout = #layout;
+  static const _hinge = #hinge;
+
+  /// The scope above [context]; with [hinge], rebuilding [context] as the
+  /// hinge moves too.
+  static BarEdgeScope? maybeOf(BuildContext context, {bool hinge = false}) =>
+      InheritedModel.inheritFrom<BarEdgeScope>(
+        context,
+        aspect: hinge ? _hinge : _layout,
+      );
+
+  bool _layoutChanged(BarEdgeScope old) =>
+      old.edge != edge ||
+      old.insets != insets ||
+      old.window != window ||
+      old.device.withoutHinge != device.withoutHinge;
 
   @override
   bool updateShouldNotify(BarEdgeScope old) =>
-      old.edge != edge || old.insets != insets || old.window != window;
+      _layoutChanged(old) || old.device.hinge != device.hinge;
+
+  @override
+  bool updateShouldNotifyDependent(BarEdgeScope old, Set<Object> aspects) =>
+      (aspects.contains(_layout) && _layoutChanged(old)) ||
+      (aspects.contains(_hinge) && old.device.hinge != device.hinge);
 }
 
 /// What a screen asks of the window it is in.

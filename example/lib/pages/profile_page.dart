@@ -23,6 +23,7 @@ class ProfilePage extends StatelessWidget {
           const EdgeInsets.fromLTRB(16, 8, 16, 120),
         ),
         children: [
+          const DeviceCard(),
           for (final (icon, label) in items)
             ListTile(
               leading: Icon(icon),
@@ -31,6 +32,69 @@ class ProfilePage extends StatelessWidget {
               onTap: () {},
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// What iOS says about the device, live: fold the Duo, turn it, open it
+/// halfway, and watch it change.
+class DeviceCard extends StatelessWidget {
+  const DeviceCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final device = DuoDevice.of(context);
+    final theme = Theme.of(context);
+    String rect(Rect r) =>
+        '${r.left.round()}, ${r.top.round()}  ${r.width.round()} × ${r.height.round()}';
+    final rows =
+        device.fromIOS
+            ? [
+              ('Column', context.barEdge?.name ?? 'none'),
+              (
+                'Hinge',
+                device.hinge == null
+                    ? 'none'
+                    : '${device.hinge!.angle.round()}°  ${device.hinge!.status.name}',
+              ),
+              ('Posture', device.posture?.name ?? 'none'),
+              (
+                'Fold',
+                device.fold == null
+                    ? 'none'
+                    : '${rect(device.fold!.rect)}${device.fold!.isActive ? '' : '  (flat)'}',
+              ),
+              for (final region in device.occlusions)
+                if (region.isActive) ('Camera, clock', rect(region.frame)),
+            ]
+            : [('iOS', 'says nothing here: reading the safe area')];
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 16),
+      color: theme.colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 6,
+          children: [
+            Text(
+              tr(context, 'This device', 'هذا الجهاز'),
+              style: theme.textTheme.titleMedium,
+            ),
+            for (final (label, value) in rows)
+              Row(
+                children: [
+                  SizedBox(
+                    width: 110,
+                    child: Text(label, style: theme.textTheme.bodySmall),
+                  ),
+                  Expanded(child: Text(value)),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }

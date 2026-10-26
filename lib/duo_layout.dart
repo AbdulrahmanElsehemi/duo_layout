@@ -7,6 +7,7 @@ library;
 export 'src/bar_edge.dart';
 export 'src/design_size.dart';
 export 'src/duo_app_bar.dart';
+export 'src/duo_device.dart' hide DuoPlatform;
 export 'src/duo_scope.dart';
 export 'src/edge_bleed.dart';
 export 'src/side_tab_bar.dart';

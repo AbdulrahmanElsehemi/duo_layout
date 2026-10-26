@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'bar_edge.dart';
 import 'design_size.dart';
+import 'duo_device.dart';
 
 /// The one widget an app puts above its navigator — in `MaterialApp.builder`
 /// — for everything else in this package to work:
@@ -14,8 +17,11 @@ import 'design_size.dart';
 /// )
 /// ```
 ///
+/// * It asks iOS about the device ([DuoDevice]: the column's side, the hinge,
+///   the fold, the camera) and keeps asking as the window changes and the
+///   hinge moves.
 /// * It reads the window's [BarEdge] before any screen's `SafeArea` hides the
-///   insets, and hands it down ([BarEdgeScope]).
+///   insets, and hands it down with the device ([BarEdgeScope]).
 /// * Where the status bar runs down a side, iOS reports no inset at the top
 ///   at all, and headers met the rounded corner of the glass: every screen
 ///   keeps at least [minTopInset] there.
@@ -47,10 +53,46 @@ class DuoScope extends StatefulWidget {
 
 class _DuoScopeState extends State<DuoScope> {
   List<DeviceOrientation>? _orientations;
+  var _device = DuoDevice.unknown;
+  StreamSubscription<DuoDevice>? _changes;
+  Size? _asked;
+  Timer? _settle;
+
+  @override
+  void initState() {
+    super.initState();
+    _changes = DuoPlatform.changes().listen(_take);
+  }
+
+  @override
+  void dispose() {
+    _changes?.cancel();
+    _settle?.cancel();
+    super.dispose();
+  }
+
+  void _take(DuoDevice device) {
+    if (mounted && device != _device) setState(() => _device = device);
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // The fold and the camera move with the window; the hinge and the
+    // column's side come on their own.
+    final window = MediaQuery.sizeOf(context);
+    if (window != _asked) {
+      _asked = window;
+      DuoPlatform.snapshot().then(_take);
+      // iOS lays the status bar out again a moment after the window
+      // changes, and its region grows: on the outer screen from 84 tall to
+      // 174. Nothing tells the app, so ask again once it has settled.
+      _settle?.cancel();
+      _settle = Timer(
+        const Duration(milliseconds: 600),
+        () => DuoPlatform.snapshot().then(_take),
+      );
+    }
     if (!widget.lockPhonesUpright) return;
     // The screen, not the window: an iPad in a narrow window still turns.
     final display = View.of(context).display;
@@ -70,9 +112,10 @@ class _DuoScopeState extends State<DuoScope> {
   @override
   Widget build(BuildContext context) {
     final data = MediaQuery.of(context);
-    final side = BarEdge.of(data.viewPadding) != null;
+    final side = BarEdge.resolve(data.viewPadding, _device) != null;
     return BarEdgeScope.of(
       data,
+      device: _device,
       child: !side
           ? widget.child
           : MediaQuery(

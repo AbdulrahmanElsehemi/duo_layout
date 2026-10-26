@@ -1,17 +1,20 @@
 import 'package:flutter/widgets.dart';
 
 import 'bar_edge.dart';
+import 'duo_device.dart';
 import 'window_class.dart';
 
 /// Two panes side by side, split down the middle of the window, for a wide
 /// window ([fits]): a list beside the item picked, a photo beside what it
 /// shows, a cart beside its total.
 ///
-/// The middle is where an iPhone Duo open on its side folds, so neither pane
-/// is broken by the crease and each is about a phone wide; on an iPad it is
-/// simply half and half. iOS does not say where the fold is, so the split
-/// relies on the panes taking the whole window — give it the Scaffold's body,
-/// not something inset.
+/// On the iPhone Duo open on its side it splits at the fold iOS reports
+/// ([DuoDevice.fold]), so neither pane is broken by the crease and each is
+/// about a phone wide; elsewhere, and where iOS says nothing, down the middle
+/// — where the Duo folds anyway, and half and half on an iPad. The fold is
+/// in the window's coordinates, so it is used only while the panes take the
+/// whole width of the window: give it the Scaffold's body, not something
+/// inset.
 ///
 /// Each pane keeps clear of its own edge of the glass (the status bar down
 /// one side, a camera), not the other pane's. Only the pane beside the status
@@ -41,26 +44,40 @@ class TwoPane extends StatelessWidget {
             ? pane
             : BarEdgeScope.off(context, child: pane);
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: MediaQuery.removePadding(
-            context: context,
-            removeLeft: !ltr,
-            removeRight: ltr,
-            child: away(start, onLeft: ltr),
-          ),
-        ),
-        Expanded(
-          child: MediaQuery.removePadding(
-            context: context,
-            removeLeft: ltr,
-            removeRight: !ltr,
-            child: away(end, onLeft: !ltr),
-          ),
-        ),
-      ],
+    final fold = DuoDevice.regionsOf(context).fold;
+    final window = context.windowSize;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        // Where the crease runs, from the left of the glass.
+        final crease =
+            fold != null && fold.axis == Axis.vertical && width == window.width
+                ? fold.rect.center.dx
+                : width / 2;
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              width: ltr ? crease : width - crease,
+              child: MediaQuery.removePadding(
+                context: context,
+                removeLeft: !ltr,
+                removeRight: ltr,
+                child: away(start, onLeft: ltr),
+              ),
+            ),
+            Expanded(
+              child: MediaQuery.removePadding(
+                context: context,
+                removeLeft: ltr,
+                removeRight: !ltr,
+                child: away(end, onLeft: !ltr),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

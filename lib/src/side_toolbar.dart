@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'bar_edge.dart';
+import 'duo_device.dart';
 import 'window_class.dart';
 
 /// A header's buttons, stood where iOS stands a toolbar on the iPhone Duo:
@@ -36,15 +37,39 @@ class SideToolbar extends StatefulWidget {
   final double spacing;
 
   /// Where the column's first item starts, from the top of the window;
-  /// [defaultTop] when null.
+  /// [topOf] when null.
   final double? top;
 
   /// Whether a header at [context] gives its buttons to the column.
   static bool show(BuildContext context) => context.barEdge != null;
 
-  /// Under the clock, and on the outer screen under the camera above it too.
-  /// iOS gives an app no figure for this; these are measured on the iPhone
-  /// Duo simulator (iOS 27.1).
+  /// Where the column's first item starts at [context]: [gap] under what
+  /// iOS reports it keeps at the top of the column (the clock, and on the
+  /// outer screen the camera), or [defaultTop] where iOS says nothing.
+  static double topOf(BuildContext context, {double gap = 8}) {
+    final edge = context.barEdge;
+    final window = context.windowSize;
+    final insets = context.windowInsets;
+    final column = edge == BarEdge.left
+        ? Rect.fromLTWH(0, 0, insets.left, window.height)
+        : Rect.fromLTWH(
+            window.width - insets.right, 0, insets.right, window.height);
+    double? under;
+    for (final region in DuoDevice.regionsOf(context).occlusions) {
+      final frame = region.frame;
+      if (!region.isActive ||
+          !frame.overlaps(column) ||
+          frame.top > window.height / 2) {
+        continue;
+      }
+      if (under == null || frame.bottom > under) under = frame.bottom;
+    }
+    return under != null ? under + gap : defaultTop(window);
+  }
+
+  /// Under the clock, and on the outer screen under the camera above it
+  /// too, as measured on the iPhone Duo simulator (iOS 27.1): what [topOf]
+  /// falls back to before iOS 27.1, where iOS gives no figure.
   static double defaultTop(Size window) =>
       window.width < DuoBreakpoints.medium ? 160 : 104;
 
@@ -67,7 +92,6 @@ class _SideToolbarState extends State<SideToolbar> {
     if (edge == null || widget.items.isEmpty) return widget.child;
 
     final insets = context.windowInsets;
-    final window = context.windowSize;
     final left = edge == BarEdge.left;
 
     Widget column = Column(
@@ -99,7 +123,7 @@ class _SideToolbarState extends State<SideToolbar> {
               left: left ? 0 : null,
               right: left ? null : 0,
               width: left ? insets.left : insets.right,
-              top: widget.top ?? SideToolbar.defaultTop(window),
+              top: widget.top ?? SideToolbar.topOf(context),
               child: Center(child: column),
             ),
       child: widget.child,
