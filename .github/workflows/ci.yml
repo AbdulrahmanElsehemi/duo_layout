@@ -41,8 +41,16 @@ jobs:
       fail-fast: false
       matrix:
         packages: [cocoapods, spm]
+    defaults:
+      run:
+        working-directory: iphone_duo
     steps:
+      # Into a folder named as the package: Flutter names a plugin's Swift
+      # package after its folder, and the example takes the package from
+      # `..`. Checked out as duo_layout, Xcode refuses the mismatch.
       - uses: actions/checkout@v4
+        with:
+          path: iphone_duo
       - name: Use the newest Xcode on the runner
         # The hinge, the fold and the vertical bar compile only with the
         # iOS 27.1 SDK; with an older Xcode they are left out, and the
@@ -63,7 +71,50 @@ jobs:
         if: matrix.packages == 'cocoapods'
         run: flutter config --no-enable-swift-package-manager
       - name: Build for the simulator, without signing
-        working-directory: example
+        working-directory: iphone_duo/example
         run: |
           flutter pub get
+          flutter build ios --simulator --debug --no-codesign
+
+  pub:
+    name: Build a new app with iphone_duo from pub.dev (${{ matrix.packages }})
+    # What an app that adds the published package gets: by hand only.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        packages: [cocoapods, spm]
+    steps:
+      - name: Use the newest Xcode on the runner
+        run: |
+          xcode=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$xcode"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Swift Package Manager
+        if: matrix.packages == 'spm'
+        run: flutter config --enable-swift-package-manager
+      - name: CocoaPods
+        if: matrix.packages == 'cocoapods'
+        run: flutter config --no-enable-swift-package-manager
+      - name: A new app, with the package from pub.dev
+        run: |
+          flutter create --platforms ios --org dev.example consumer
+          cd consumer
+          flutter pub add iphone_duo
+          cat > lib/main.dart <<'DART'
+          import 'package:flutter/material.dart';
+          import 'package:iphone_duo/iphone_duo.dart';
+
+          void main() => runApp(
+                MaterialApp(
+                  builder: (context, child) => DuoScope(child: child!),
+                  home: const Scaffold(body: Center(child: Text('iphone_duo'))),
+                ),
+              );
+          DART
           flutter build ios --simulator --debug --no-codesign
