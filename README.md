@@ -159,7 +159,7 @@ dependencies:
   duo_layout:
     git:
       url: https://github.com/AbdulrahmanElsehemi/duo_layout.git
-      ref: v0.3.0
+      ref: v0.4.0
 ```
 
 Then run `flutter pub get`, and `pod install` in `ios/` if your app uses

@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'duo_layout'
-  s.version          = '0.2.0'
+  s.version          = '0.4.0'
   s.summary          = 'The iPhone Duo hinge, fold and status bar column, for duo_layout.'
   s.description      = <<-DESC
 The iPhone Duo hinge, fold and status bar column, for duo_layout.

@@ -1,4 +1,4 @@
-## Unreleased
+## 0.4.0
 
 * `showModalBottomSheetOffFold` and `SheetOffFold`: a bottom sheet kept off
   the fold, under it when it runs across the screen and in the end half
