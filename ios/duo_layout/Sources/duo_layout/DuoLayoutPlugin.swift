@@ -10,6 +10,11 @@ import UIKit
 /// whenever the hinge moves or the bar changes side. The regions move with
 /// the window, so the Dart side asks for a snapshot when the window changes.
 ///
+/// `setVerticalBarDisabled` keeps the status bar and the bars across the top
+/// on the screen showing (`preferredVerticalBarBehavior`), through the app's
+/// root `DuoFlutterViewController`. `duo_layout/menu_button` is the "…" at
+/// the foot of the column: a native button that opens iOS's own menu.
+///
 /// The APIs are in the iOS 27.1 SDK. Built with an older Xcode, or run on an
 /// older iOS, the answer is `available: false` and duo_layout reads the safe
 /// area instead.
@@ -31,6 +36,13 @@ public class DuoLayoutPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
     let changes = FlutterEventChannel(
       name: "duo_layout/changes", binaryMessenger: registrar.messenger())
     changes.setStreamHandler(instance)
+    registrar.register(
+      DuoMenuButtonFactory(messenger: registrar.messenger()),
+      withId: "duo_layout/menu_button")
+    // A storyboard names DuoFlutterViewController only as a string. Linked
+    // statically (Swift Package Manager), a class nothing in the code names
+    // can be left out, and the app opens on an empty view controller.
+    _ = DuoFlutterViewController.self
   }
 
   /// The Flutter view: from the registrar, or under UIScene, where it can be
@@ -49,6 +61,11 @@ public class DuoLayoutPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
       Task { @MainActor in
         self.observe()
         result(self.snapshot())
+      }
+    case "setVerticalBarDisabled":
+      let disabled = call.arguments as? Bool ?? false
+      Task { @MainActor in
+        result(self.setVerticalBarDisabled(disabled))
       }
     default:
       result(FlutterMethodNotImplemented)
@@ -70,6 +87,21 @@ public class DuoLayoutPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
     sink = nil
     Task { @MainActor in self.stopObserving() }
     return nil
+  }
+
+  /// Whether iOS took it: the root has to be a `DuoFlutterViewController`,
+  /// and iOS 27.1 or later.
+  @MainActor
+  private func setVerticalBarDisabled(_ disabled: Bool) -> Bool {
+    #if canImport(UIKit, _version: 9127.0.85)
+      if #available(iOS 27.1, *) {
+        let root = registrar?.viewController ?? view?.window?.rootViewController
+        guard let root = root as? DuoFlutterViewController else { return false }
+        root.verticalBarDisabled = disabled
+        return true
+      }
+    #endif
+    return false
   }
 
   @MainActor

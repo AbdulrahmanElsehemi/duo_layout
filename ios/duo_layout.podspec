@@ -13,7 +13,7 @@ The iPhone Duo hinge, fold and status bar column, for duo_layout.
   s.license          = { :file => '../LICENSE' }
   s.author           = 'Abdulrahman Elsehemy'
   s.source           = { :path => '.' }
-  s.source_files = 'duo_layout/Sources/duo_layout/**/*'
+  s.source_files = 'duo_layout/Sources/duo_layout/**/*.swift'
   s.dependency 'Flutter'
   s.platform = :ios, '15.0'
 
@@ -21,9 +21,7 @@ The iPhone Duo hinge, fold and status bar column, for duo_layout.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
   s.swift_version = '5.0'
 
-  # If your plugin requires a privacy manifest, for example if it uses any
-  # required reason APIs, update the PrivacyInfo.xcprivacy file to describe your
-  # plugin's privacy impact, and then uncomment this line. For more information,
-  # see https://developer.apple.com/documentation/bundleresources/privacy_manifest_files
-  # s.resource_bundles = {'duo_layout_privacy' => ['duo_layout/Sources/duo_layout/PrivacyInfo.xcprivacy']}
+  # It declares nothing: the plugin tracks nothing, collects nothing, and
+  # calls none of the APIs Apple asks reasons for.
+  s.resource_bundles = {'duo_layout_privacy' => ['duo_layout/Sources/duo_layout/PrivacyInfo.xcprivacy']}
 end

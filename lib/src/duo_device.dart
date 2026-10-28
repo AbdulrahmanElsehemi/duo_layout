@@ -265,6 +265,25 @@ abstract final class DuoPlatform {
     }
   }
 
+  /// Asks iOS to keep the status bar and the bars across the top and the
+  /// foot, rather than down a column ([disabled]), or to put them back as it
+  /// chooses. Whether iOS took it: false off iOS, without the plugin, before
+  /// iOS 27.1, and when the app's root is not a `DuoFlutterViewController`.
+  static Future<bool> setVerticalBarDisabled(bool disabled) async {
+    if (!_onIOS) return false;
+    try {
+      return await _methods.invokeMethod<bool>(
+            'setVerticalBarDisabled',
+            disabled,
+          ) ??
+          false;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    }
+  }
+
   /// Each time the hinge moves or the column changes side. Empty off iOS,
   /// and without the plugin: listening to a channel nobody answers reports
   /// an error of its own, which the stream cannot catch.

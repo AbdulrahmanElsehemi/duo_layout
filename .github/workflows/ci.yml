@@ -30,19 +30,38 @@ jobs:
       - run: flutter test
 
   ios:
-    name: Build the example for iOS
+    name: Build the example for iOS (${{ matrix.packages }})
     # The Swift plugin only compiles on a Mac. Run for a release tag, or by
     # hand from the Actions tab, rather than on every push.
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     needs: test
     runs-on: macos-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        packages: [cocoapods, spm]
     steps:
       - uses: actions/checkout@v4
+      - name: Use the newest Xcode on the runner
+        # The hinge, the fold and the vertical bar compile only with the
+        # iOS 27.1 SDK; with an older Xcode they are left out, and the
+        # rest still has to build.
+        run: |
+          xcode=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$xcode"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i iphoneos
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+      - name: Swift Package Manager
+        if: matrix.packages == 'spm'
+        run: flutter config --enable-swift-package-manager
+      - name: CocoaPods
+        if: matrix.packages == 'cocoapods'
+        run: flutter config --no-enable-swift-package-manager
       - name: Build for the simulator, without signing
         working-directory: example
         run: |

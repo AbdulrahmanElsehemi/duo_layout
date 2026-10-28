@@ -33,7 +33,8 @@ runs there as on any phone or tablet without a fold: no side column, and
   [`ListDetail`](#listdetail) · [`DialogOffFold`](#dialogofffold) ·
   [Bottom sheets](#bottom-sheets) · [`KeyboardAboveFold`](#keyboardabovefold) ·
   [`FoldSplit`](#foldsplit) · [`EdgeBleed`](#edgebleed) ·
-  [`HeroBleed`](#herobleed) · [`TabletopLayout`](#tabletoplayout)
+  [`HeroBleed`](#herobleed) · [`NoVerticalBar`](#noverticalbar) ·
+  [`TabletopLayout`](#tabletoplayout)
 - [Reading the device](#reading-the-device): the hinge, the fold, the
   posture, `PostureBuilder`
 - [Helpers](#helpers): `context.barEdge`, window classes, even columns
@@ -105,6 +106,11 @@ And there are problems you can't see in that picture:
 - **The tab bar Apple asks for.** A capsule of icons at the foot of the
   column. It shrinks to the current tab when you scroll down, and opens again
   when you scroll up or tap it.
+- **iOS's own "…" menu.** Past three buttons, the rest go behind a "…" at
+  the foot of the column, in iOS's own pull-down menu.
+- **A screen can keep its bars across.** `NoVerticalBar` asks iOS to keep
+  the status bar along the top while a screen shows, as
+  `preferredVerticalBarBehavior = .disabled` does.
 - **A toolbar in the column.** Back (or Close on a full-screen dialog) on
   top, your actions under it. The buttons belong to their screen: they hide
   when it's covered or its tab isn't showing, and fade with the route.
@@ -143,7 +149,7 @@ And there are problems you can't see in that picture:
 - **Works with `flutter_screenutil`**, or without it. `DuoDesignSize` gives
   the right `designSize` for every window.
 - **No dependencies** beyond Flutter.
-- **Tested.** 80 tests, and an example app to try on the simulator.
+- **Tested.** 88 tests, and an example app to try on the simulator.
 - **Test helpers.** `package:duo_layout/testing.dart` has the simulator's
   numbers for every way the Duo is held, so your tests don't copy them.
 - **A debug overlay.** `DuoScope(debugShowRegions: true)` draws the fold,
@@ -163,7 +169,10 @@ dependencies:
 ```
 
 Then run `flutter pub get`, and `pod install` in `ios/` if your app uses
-CocoaPods.
+CocoaPods. With Swift Package Manager
+(`flutter config --enable-swift-package-manager`) there is nothing more to
+run: the plugin ships a `Package.swift`, and its privacy manifest comes with
+it either way.
 
 Pin `ref` to a tag, not a branch. Then a new commit never changes your app
 until you move the tag yourself.
@@ -444,12 +453,43 @@ Scaffold(
 |---|---|---|
 | `title` | required | The bar's title |
 | `actions` | `[]` | `DuoAction`s: icon buttons only |
+| `menu` | `[]` | `DuoMenuItem`s behind a "…" after the actions |
+| `columnLimit` | `3` | How many actions stand in the column; the rest go first in the "…" menu |
 | `automaticallyImplyLeading` | `true` | Shows Back or Close when the route can be left |
 | `backgroundColor` | theme | The bar's colour |
 | `centerTitle` | theme | Ignored in the column, where the title starts from the start edge |
 
-`DuoAction(icon, tooltip, onPressed)`: the tooltip shows on a long press and
-is what screen readers read, so always set it.
+`DuoAction(icon, tooltip, onPressed, systemImage)`: the tooltip shows on a
+long press and is what screen readers read, so always set it. It's also the
+action's title when it goes in the "…" menu, with `systemImage` (an SF
+Symbol) beside it.
+
+#### The "…" menu
+
+Apple keeps three or four buttons in the column and puts the rest in a menu
+at its foot. `DuoAppBar` does the same: the first `columnLimit` actions
+stand under Back, and the rest, then `menu`, go behind a "…":
+
+```dart
+DuoAppBar(
+  title: Text(product.name),
+  actions: [share, save, compare, addToList], // addToList goes in the menu
+  menu: [
+    DuoMenuItem(title: 'Report a problem', systemImage: 'exclamationmark.bubble', onSelected: report),
+    DuoMenuItem(title: 'Remove', systemImage: 'trash', destructive: true, onSelected: remove),
+  ],
+)
+```
+
+- **In the column on iOS,** the menu is iOS's own pull-down menu
+  (`UIMenu`): a native button over the "…" disc opens it, so it looks,
+  animates and reads out as Apple's do. `systemImage` is the SF Symbol
+  beside each title, and `destructive` draws it in red.
+- **In the bar across the top, and off iOS,** it's Flutter's `MenuAnchor`
+  with the same items, and `icon` beside each title.
+- An item whose `onSelected` is null is greyed out.
+- `SideToolbarMenuButton(items: ...)` is the "…" on its own, for a
+  `SideToolbar` of your own.
 
 Keep buttons with words out of `actions`. Apple keeps text buttons in
 horizontal bars on the Duo too.
@@ -750,6 +790,43 @@ ListView(
   false)`, with the content padded by `EdgeBleed.sides(context)`.
 - On a phone, an iPad, or a `TwoPane` pane away from the column, it's the
   picture with the overlay on it, as it is.
+
+### `NoVerticalBar`
+
+Some screens the column doesn't suit: a full-screen video or camera, a
+game, a form whose buttons have words. Wrap such a screen in
+`NoVerticalBar`, and while it shows iOS keeps the status bar and the bars
+across the top, as on a phone. `context.barEdge` is then null, and the
+package's widgets lay the screen out as on a phone too:
+
+```dart
+Navigator.push(context, MaterialPageRoute(
+  builder: (_) => const NoVerticalBar(child: VideoPlayerPage()),
+));
+```
+
+- It counts while its screen can be seen: not while another page covers
+  it, nor on a tab that isn't showing. With none showing, iOS puts the
+  column back.
+- Going from one such screen to another, the column doesn't come back in
+  between.
+
+It's Apple's `preferredVerticalBarBehavior = .disabled`, which iOS asks the
+app's root view controller for. Flutter's can't be told, so make the root
+the plugin's `DuoFlutterViewController`, a `FlutterViewController` in every
+other way. In `ios/Runner/Base.lproj/Main.storyboard`, set the root's class:
+
+```xml
+<viewController id="BYZ-38-t0r" customClass="DuoFlutterViewController" sceneMemberID="viewController">
+```
+
+Or in Xcode: select the Flutter View Controller, and in the Identity
+inspector set Class to `DuoFlutterViewController`, with no module. If the
+app creates its view controller in code, create a `DuoFlutterViewController`
+there instead (`import duo_layout`).
+
+Without it, or before iOS 27.1, the screen keeps the column, and a debug
+build says why once.
 
 ## Reading the device
 
@@ -1209,9 +1286,9 @@ Tag a new version in this repository, then move `ref` in your app's
 - **The hinge, the fold and the camera need iOS 27.1,** and an app built
   with Xcode 27.1 or later. Before that, `DuoDevice` is unknown, `TwoPane`
   splits down the middle, and `SideToolbar` uses its measured positions.
-- **Swift Package Manager.** The plugin ships a `Package.swift`, but it has
-  only been built through CocoaPods so far.
-- **No "…" overflow menu yet.** Keep three or four buttons in the column.
+- **Not yet tried on the iPhone Duo simulator:** iOS's "…" menu,
+  `NoVerticalBar`, and the build with Swift Package Manager. Their Dart
+  side is tested; the Swift builds in CI.
 - **iOS only.** The plugin has no Android side, and Android foldables
   aren't supported. On Android the package reads no fold and no column.
 
@@ -1238,8 +1315,8 @@ flutter test test/screenshots_test.dart --update-goldens
 
 ## Roadmap
 
-- [ ] A "…" overflow menu for the column
-- [ ] Opt a screen out of the vertical bar (`preferredVerticalBarBehavior`)
+- [ ] Try iOS's "…" menu, `NoVerticalBar` and Swift Package Manager on the
+  iPhone Duo simulator
 
 ## License
 

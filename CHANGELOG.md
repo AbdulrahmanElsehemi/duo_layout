@@ -1,3 +1,18 @@
+## Unreleased
+
+* `DuoAppBar(menu:, columnLimit:)` and `SideToolbarMenuButton`: past three
+  actions, the rest go behind a "…" at the foot of the column, in iOS's own
+  pull-down menu (`UIMenu`); Flutter's `MenuAnchor` in the bar across the
+  top and off iOS. `DuoAction.systemImage` is the SF Symbol beside an action
+  that goes in the menu.
+* `NoVerticalBar`: while a screen shows, iOS keeps the status bar and the
+  bars across the top (`preferredVerticalBarBehavior = .disabled`). Needs
+  the app's root to be the plugin's `DuoFlutterViewController`.
+* Swift Package Manager: the privacy manifest is bundled, with SPM and with
+  CocoaPods, and CI builds the example both ways with the newest Xcode.
+* Not yet tried on the iPhone Duo simulator: the native menu,
+  `NoVerticalBar`, and the build with Swift Package Manager.
+
 ## 0.4.0
 
 * `showModalBottomSheetOffFold` and `SheetOffFold`: a bottom sheet kept off
