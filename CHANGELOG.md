@@ -1,3 +1,10 @@
+## 0.5.1
+
+* The repository is now github.com/AbdulrahmanElsehemi/iphone_duo, and
+  pub.dev links to it.
+* The README says the package is not affiliated with Apple.
+* The plugin's podspec carries the package's version again (it said 0.4.0).
+
 ## 0.5.0
 
 * Published on pub.dev as `iphone_duo`: the name `duo_layout` there is

@@ -1,6 +1,6 @@
 name: iphone_duo
 description: "iPhone Duo layouts from Apple's HIG: a side tab bar that minimizes, toolbars down the status bar column, two panes at the fold, rows that scroll under the side strip."
-version: 0.5.0
+version: 0.5.1
 repository: https://github.com/AbdulrahmanElsehemi/iphone_duo
 issue_tracker: https://github.com/AbdulrahmanElsehemi/iphone_duo/issues
 topics:

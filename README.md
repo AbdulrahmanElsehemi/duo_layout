@@ -1321,3 +1321,7 @@ flutter test test/screenshots_test.dart --update-goldens
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+iphone_duo is an independent open-source project. It is not affiliated with,
+endorsed by or sponsored by Apple Inc. iPhone is a trademark of Apple Inc.,
+registered in the U.S. and other countries.
