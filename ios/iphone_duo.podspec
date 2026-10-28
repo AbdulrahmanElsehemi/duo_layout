@@ -9,7 +9,7 @@ Pod::Spec.new do |s|
   s.description      = <<-DESC
 The iPhone Duo hinge, fold and status bar column, for iphone_duo.
                        DESC
-  s.homepage         = 'https://github.com/AbdulrahmanElsehemi/duo_layout'
+  s.homepage         = 'https://github.com/AbdulrahmanElsehemi/iphone_duo'
   s.license          = { :file => '../LICENSE' }
   s.author           = 'Abdulrahman Elsehemy'
   s.source           = { :path => '.' }

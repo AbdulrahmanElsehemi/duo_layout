@@ -47,7 +47,7 @@ jobs:
     steps:
       # Into a folder named as the package: Flutter names a plugin's Swift
       # package after its folder, and the example takes the package from
-      # `..`. Checked out as duo_layout, Xcode refuses the mismatch.
+      # `..`. In a folder of another name, Xcode refuses the mismatch.
       - uses: actions/checkout@v4
         with:
           path: iphone_duo

@@ -2,7 +2,7 @@ name: Publish to pub.dev
 
 # A version tag (v0.5.1) publishes that version, with no password: pub.dev
 # trusts this workflow once automated publishing is turned on in the
-# package's Admin tab (repository AbdulrahmanElsehemi/duo_layout, tag
+# package's Admin tab (repository AbdulrahmanElsehemi/iphone_duo, tag
 # pattern v{{version}}). The very first version has to be published by hand.
 on:
   push:
