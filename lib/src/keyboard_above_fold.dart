@@ -1,0 +1,47 @@
+import 'dart:math' as math;
+
+import 'package:flutter/widgets.dart';
+
+import 'duo_device.dart';
+
+/// Keeps what is being typed above the iPhone Duo's fold.
+///
+/// Open upright, the Duo's fold runs across the screen and the keyboard
+/// rises to about it, so a field scrolled into view just above the keys can
+/// sit on the bend. While the keyboard is up, this tells every screen under
+/// it that the keyboard reaches the fold: pages and sheets then keep the
+/// field above it, the way a laptop has the screen above and the keys below.
+/// Without a fold across the screen, or with no keyboard, [child] as it is.
+///
+/// Put it under `DuoScope`, above the navigator:
+///
+/// ```dart
+/// MaterialApp(
+///   builder: (context, child) =>
+///       DuoScope(child: KeyboardAboveFold(child: child!)),
+/// )
+/// ```
+class KeyboardAboveFold extends StatelessWidget {
+  const KeyboardAboveFold({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = MediaQuery.of(context);
+    final keyboard = data.viewInsets.bottom;
+    final fold = DuoDevice.regionsOf(context).fold;
+    if (keyboard == 0 || fold == null || fold.axis != Axis.horizontal) {
+      return child;
+    }
+    final fromFold = data.size.height - fold.frame.top;
+    return MediaQuery(
+      data: data.copyWith(
+        viewInsets: data.viewInsets.copyWith(
+          bottom: math.max(keyboard, fromFold),
+        ),
+      ),
+      child: child,
+    );
+  }
+}

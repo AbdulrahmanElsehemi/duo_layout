@@ -90,8 +90,8 @@ enum DuoPosture {
 /// What iOS says about the device the app is on: the side of the status
 /// bar's column, the hinge, the fold, and the camera and status bar.
 ///
-/// From iOS 27.1, through the plugin's channel. On anything else — Android,
-/// an older iOS, an app built with an older Xcode, a widget test — it is
+/// From iOS 27.1, through the plugin's channel. On anything else — an older
+/// iOS, an app built with an older Xcode, a widget test, or off iOS — it is
 /// [DuoDevice.unknown], and the package reads the safe area instead.
 @immutable
 class DuoDevice {

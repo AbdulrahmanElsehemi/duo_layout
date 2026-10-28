@@ -11,8 +11,12 @@ then behaves like Apple's own apps:
 - Two panes split exactly at the fold.
 - Horizontal rows of cards scroll all the way to the edge of the glass.
 
-On an iPhone, an iPad and Android, the same code draws the app you have
-today. Nothing changes there.
+On an iPhone and an iPad, the same code draws the app you have today.
+Nothing changes there.
+
+The package is for iOS. If your app also ships on Android, it builds and
+runs there as on any phone or tablet without a fold: no side column, and
+`TwoPane` splits down the middle of a wide window.
 
 ![An iPhone, the iPhone Duo closed, and the iPhone Duo open on its side](doc/images/overview.png)
 
@@ -27,9 +31,11 @@ today. Nothing changes there.
   [`SideTabBar`](#sidetabbar) · [`DuoAppBar`](#duoappbar) ·
   [`SideToolbar`](#sidetoolbar) · [`TwoPane`](#twopane) ·
   [`ListDetail`](#listdetail) · [`DialogOffFold`](#dialogofffold) ·
-  [`FoldSplit`](#foldsplit) · [`EdgeBleed`](#edgebleed)
+  [Bottom sheets](#bottom-sheets) · [`KeyboardAboveFold`](#keyboardabovefold) ·
+  [`FoldSplit`](#foldsplit) · [`EdgeBleed`](#edgebleed) ·
+  [`HeroBleed`](#herobleed) · [`TabletopLayout`](#tabletoplayout)
 - [Reading the device](#reading-the-device): the hinge, the fold, the
-  posture
+  posture, `PostureBuilder`
 - [Helpers](#helpers): `context.barEdge`, window classes, even columns
 - [With `flutter_screenutil`](#with-flutter_screenutil)
 - [Testing your layouts](#testing-your-layouts)
@@ -108,13 +114,20 @@ And there are problems you can't see in that picture:
 - **List and detail, like Mail.** `ListDetail` opens an item beside its list
   on the open Duo and on its own page on a phone. Fold the Duo shut and the
   item you were reading goes on to its own page; the list keeps its scroll.
-- **Dialogs off the fold.** `DialogOffFold` keeps a dialog to one half, the
-  way Apple asks.
+- **Dialogs and sheets off the fold.** `DialogOffFold` keeps a dialog to
+  one half, the way Apple asks. `showModalBottomSheetOffFold` opens a sheet
+  under the fold, or in the end half beside it.
+- **Typing above the fold.** `KeyboardAboveFold` keeps the field being typed
+  in above the bend, with the keys below it.
+- **Tabletop pages.** `TabletopLayout` puts what is watched on the upright
+  half and what is touched on the half lying on the table.
 - **Side-by-side comparisons.** `FoldSplit` and `FoldRow` put two things one
   either side of the fold, as wide as each other.
 - **Rows that reach the glass.** `EdgeBleed` lets a horizontal row scroll
   under the column to the edge of the screen. Its first card still lines up
   with the page's text.
+- **Pictures that reach the glass.** `HeroBleed` lets a page's lead photo
+  reach under the column too, while what is drawn on it stays clear.
 - **Even columns.** `DuoBreakpoints.columns(..., even: true)` gives an even
   number of grid columns, so the fold falls between two cards.
 - **Orientation that works.** Phones stay upright; tablets and the open Duo
@@ -130,7 +143,11 @@ And there are problems you can't see in that picture:
 - **Works with `flutter_screenutil`**, or without it. `DuoDesignSize` gives
   the right `designSize` for every window.
 - **No dependencies** beyond Flutter.
-- **Tested.** 43 tests, and an example app to try on the simulator.
+- **Tested.** 80 tests, and an example app to try on the simulator.
+- **Test helpers.** `package:duo_layout/testing.dart` has the simulator's
+  numbers for every way the Duo is held, so your tests don't copy them.
+- **A debug overlay.** `DuoScope(debugShowRegions: true)` draws the fold,
+  the camera and the column over your app.
 
 ## Install
 
@@ -283,6 +300,22 @@ What it does:
 | `child` | required | Your app (the navigator) |
 | `minTopInset` | `24` | The least room at the top when the status bar is down a side; as tall as iPadOS's status bar |
 | `lockPhonesUpright` | `true` | Sets orientations from the screen size. Turn it off if your app sets them itself |
+| `debugShowRegions` | `false` | Draws what iOS reports over the app ([below](#seeing-what-ios-reports)) |
+
+#### Seeing what iOS reports
+
+To check a layout on the simulator, turn on `debugShowRegions`:
+
+```dart
+DuoScope(debugShowRegions: kDebugMode, child: child!)
+```
+
+It draws the fold in red (its margins pale, the crease strong, paler still
+while the Duo is open flat), the camera and status bar iOS keeps clear in
+blue, and the status bar's column in green. A line at the foot names the
+posture, the column's side, the window's size, and whether the answer came
+from iOS or from the safe area. None of it takes a tap. `DuoDebugOverlay`
+draws the same over any part of the app.
 
 ### `SideTabBar`
 
@@ -576,6 +609,49 @@ showDialog(
 - Wrap a date picker's `builder` the same way.
 - Without a fold it's the child as it is: centred on a phone or an iPad.
 
+### Bottom sheets
+
+`showModalBottomSheetOffFold` takes the same arguments as
+`showModalBottomSheet`, and keeps the sheet off the fold:
+
+```dart
+showModalBottomSheetOffFold(
+  context: context,
+  isScrollControlled: true,
+  builder: (context) => const SortOptions(),
+);
+```
+
+- **On a window wide enough for two panes** (the Duo open on its side, an
+  iPad), the sheet opens in the end half and leaves the other in view. On
+  the Duo that half starts at the fold. A tap on the other half closes it.
+  The sheet keeps clear of the status bar's column only when the column is
+  down its own edge.
+- **Where the fold runs across the screen** (open upright, or stood as a
+  tabletop), the sheet grows no taller than the half under the fold, and
+  taller only by the keyboard it rises above.
+- **Anywhere else**, it's the sheet `showModalBottomSheet` opens.
+
+If you open sheets some other way, wrap their content in `SheetOffFold` for
+the fold across the screen.
+
+### `KeyboardAboveFold`
+
+Open upright, the Duo's keyboard rises to about the fold, so a field
+scrolled just above the keys can sit on the bend. Put `KeyboardAboveFold`
+under `DuoScope`, and while the keyboard is up every screen is told that it
+reaches the fold. Pages and sheets then keep the field above it, the way a
+laptop has the screen above and the keys below:
+
+```dart
+MaterialApp(
+  builder: (context, child) =>
+      DuoScope(child: KeyboardAboveFold(child: child!)),
+)
+```
+
+Without a fold across the screen, or with no keyboard, nothing changes.
+
 ### `FoldSplit`
 
 Two things compared side by side (two products, two plans), one either side
@@ -642,6 +718,39 @@ ListView(
   `SafeArea(left: false, right: false)`.
 - On an upright phone there are no side insets, so it changes nothing.
 
+### `HeroBleed`
+
+A page's lead picture (a product's photo, a banner, a map) that reaches
+under the column to the edge of the glass, as Apple asks of pictures and
+backgrounds. Without it, the photo stops beside the column and leaves a
+bare strip the height of the photo.
+
+```dart
+ListView(
+  padding: EdgeBleed.sides(context), // as for EdgeBleed
+  children: [
+    HeroBleed(
+      overlay: const Align(
+        alignment: AlignmentDirectional.bottomStart,
+        child: ProductTitle(),
+      ),
+      child: AspectRatio(aspectRatio: 4 / 3, child: Image.network(url, fit: BoxFit.cover)),
+    ),
+    const ProductDetails(),
+  ],
+)
+```
+
+- `child` is the picture. It is widened by the side insets, and is as tall
+  as it lays out at that width.
+- `overlay` is drawn on it (a title, the photo's dots, a button) and stays
+  inside the page's own width, clear of the column, as Apple keeps controls
+  out of it.
+- It needs the same page as `EdgeBleed`: `SafeArea(left: false, right:
+  false)`, with the content padded by `EdgeBleed.sides(context)`.
+- On a phone, an iPad, or a `TwoPane` pane away from the column, it's the
+  picture with the overlay on it, as it is.
+
 ## Reading the device
 
 `DuoDevice.of(context)` is what iOS says about the device. It rebuilds your
@@ -678,31 +787,50 @@ the fold, the camera or the column should read
 and rebuilds only when those change. `TwoPane` and `SideToolbar` read it
 that way.
 
-### A tabletop layout
+### `PostureBuilder`
 
-A common layout for a half-open Duo: content on the upper half, controls
-on the half that lies on the table.
+`DuoDevice.of` rebuilds on every step of the hinge, many times a second
+while the Duo folds. A page laid out by how the Duo is held needs none of
+those. `PostureBuilder` reads the hinge itself and builds again only when
+the posture changes:
 
 ```dart
-Widget build(BuildContext context) {
-  final device = DuoDevice.of(context);
-  final fold = device.fold;
-  if (device.posture != DuoPosture.tabletop || fold == null) {
-    return const Player(); // the usual layout
-  }
-  return Column(
-    children: [
-      SizedBox(height: fold.frame.top, child: const Video()),
-      SizedBox(height: fold.frame.height), // the bend
-      const Expanded(child: PlayerControls()),
-    ],
-  );
-}
+PostureBuilder(
+  builder: (context, posture) => posture == DuoPosture.book
+      ? const TwoPageSpread()
+      : const SinglePage(),
+)
 ```
 
 Use the hinge for effects and interactions, and the fold for layout. iOS
 sends the angle as often as it likes, so if you only need to know whether
-the Duo is half open, read `hinge.status` or `posture`.
+the Duo is half open, read `posture`.
+
+### `TabletopLayout`
+
+Stood half open on a table, the Duo is a small laptop: the upper half is
+watched, the lower half is touched. `TabletopLayout` lays a page out that
+way while the Duo is held so, and is the usual page otherwise:
+
+```dart
+Scaffold(
+  body: TabletopLayout(
+    top: const ProductPhotos(),     // the upright half
+    bottom: const ProductDetails(), // the half on the table
+    child: const ProductPage(),     // any other way it is held
+  ),
+)
+```
+
+- The fold and its margins between the halves stay empty.
+- Each half is a window of its own: `MediaQuery` gives it its size, and the
+  insets of the edge the fold cuts off are gone.
+- It goes by the fold's place in the window, so give it the whole height
+  (a Scaffold's body), as with `TwoPane`.
+- Going in or out of the tabletop builds the halves anew. Keep what has to
+  last (a scroll position, a pick) above it.
+- For a page that splits itself, `TabletopLayout.foldOf(context, posture)`
+  gives the fold while the Duo is a tabletop, and null otherwise.
 
 ## Helpers
 
@@ -862,8 +990,53 @@ window: window)` returns the ones `DuoScope` would use.
 
 ## Testing your layouts
 
-You don't need the simulator to test the Duo. In a widget test, give the test
-view the Duo's size and insets:
+You don't need the simulator to test the Duo.
+
+### The simulator's numbers
+
+`package:duo_layout/testing.dart` has the window, the insets and iOS's
+answer (the column, the hinge, the fold) for every way the Duo is held, as
+the iPhone Duo simulator reports them:
+
+| `DuoSimulator` | Window | Insets | Posture | Fold |
+|---|---|---|---|---|
+| `closed` | 466 × 678 | right 84, bottom 34 | closed | none |
+| `upright` | 669 × 951 | top 82, bottom 34 | flat | across, inactive |
+| `onItsSide` | 951 × 669 | right 84, bottom 34 | flat | down, inactive |
+| `tabletop` | 669 × 951 | top 82, bottom 34 | tabletop | across |
+| `book` | 951 × 669 | right 84, bottom 34 | book | down |
+| `phone` | 390 × 844 | top 47, bottom 34 | none | none |
+| `iPad` | 1194 × 834 | top 24, bottom 20 | none | none |
+
+The fold is 40 points with margins of 20: across at
+`Rect.fromLTWH(0, 455.5, 669, 40)`, down at
+`Rect.fromLTWH(455.5, 0, 40, 669)`.
+
+`scope` puts a widget in that window, as `DuoScope` would hand it down. Give
+the test's view the same size, so the layout fills it:
+
+```dart
+import 'package:duo_layout/testing.dart';
+
+for (final duo in DuoSimulator.all) {
+  testWidgets('the photos never sit on the fold: $duo', (tester) async {
+    tester.view
+      ..devicePixelRatio = 1
+      ..physicalSize = duo.window;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(MaterialApp(
+      builder: (context, child) => duo.scope(child: child!),
+      home: const ProductPage(),
+    ));
+    // ... expect ...
+  });
+}
+```
+
+### With `DuoScope`
+
+To test `DuoScope` itself, give the test view the Duo's size and insets:
 
 ```dart
 testWidgets('the share button moves to the column on the iPhone Duo', (tester) async {
@@ -891,7 +1064,7 @@ The screens to test on:
 |---|---|---|
 | iPhone | `Size(390, 844)` | `top: 47, bottom: 34` |
 | Duo closed | `Size(466, 678)` | `right: 84, bottom: 34` |
-| Duo open upright | `Size(669, 951)` | `top: 44, bottom: 34` |
+| Duo open upright | `Size(669, 951)` | `top: 82, bottom: 34` |
 | Duo open on its side | `Size(951, 669)` | `right: 84, bottom: 34` |
 
 Pass `lockPhonesUpright: false` in tests, so `DuoScope` doesn't call the
@@ -948,7 +1121,7 @@ because that's how the package uses it.
 
 ### The fallback
 
-Before iOS 27.1, in an app built with an older Xcode, on Android and in
+Before iOS 27.1, in an app built with an older Xcode, off iOS and in
 widget tests, there is no answer from iOS. `BarEdge.of` then guesses from
 the safe area:
 
@@ -992,12 +1165,19 @@ From
 
 ## FAQ
 
-**Does it change anything on a normal iPhone, an iPad or Android?**
+**Does it change anything on a normal iPhone or an iPad?**
 No. Without a side column, every widget gives back exactly what you'd have
 drawn without it: `DuoAppBar` is an `AppBar`, `SideTabBar` is its child, and
 `EdgeBleed` is its child. `TwoPane` only appears where you check
 `TwoPane.fits`. The one visible change is `lockPhonesUpright`, which keeps
 phones in portrait. Turn it off if you lock orientations yourself.
+
+**And on Android?**
+The plugin is iOS only, so on Android there's no column and no fold:
+`barEdge` is always `null` and `DuoDevice` is unknown. The widgets behave as
+on an iPhone or an iPad without the plugin: `TwoPane`, `ListDetail` and
+`WindowClass` still follow the window's width, and `TwoPane` splits down the
+middle. Android foldables aren't supported, and aren't planned.
 
 **Does it work with go_router, auto_route or `MaterialApp.router`?**
 Yes. `DuoScope` goes in the `builder`, which every router setup has.
@@ -1032,13 +1212,8 @@ Tag a new version in this repository, then move `ref` in your app's
 - **Swift Package Manager.** The plugin ships a `Package.swift`, but it has
   only been built through CocoaPods so far.
 - **No "…" overflow menu yet.** Keep three or four buttons in the column.
-- **Bottom sheets** are left to Flutter. On the open Duo, keep them to one
-  half yourself, using `DuoDevice.of(context).fold`. Dialogs have
-  `DialogOffFold`.
-- **Android foldables** aren't read by the plugin. There, `barEdge` is
-  always `null` and `DuoDevice` is unknown. `TwoPane`, `WindowClass` and
-  `DuoBreakpoints` work on any wide window. Flutter's own
-  `MediaQuery.displayFeaturesOf` has the hinge on Android.
+- **iOS only.** The plugin has no Android side, and Android foldables
+  aren't supported. On Android the package reads no fold and no column.
 
 ## Example app
 
@@ -1064,9 +1239,7 @@ flutter test test/screenshots_test.dart --update-goldens
 ## Roadmap
 
 - [ ] A "…" overflow menu for the column
-- [ ] Hero images that extend under the column
 - [ ] Opt a screen out of the vertical bar (`preferredVerticalBarBehavior`)
-- [ ] Android foldables, from `MediaQuery.displayFeaturesOf`
 
 ## License
 

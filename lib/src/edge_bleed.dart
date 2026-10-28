@@ -46,6 +46,70 @@ class EdgeBleed extends StatelessWidget {
   }
 }
 
+/// A page's lead picture (a product's photo, a banner, a map) that reaches
+/// under the status bar's column to the edge of the glass, where the column
+/// runs down a side of the screen — the iPhone Duo closed, or open on its
+/// side — as Apple's guide asks of pictures and backgrounds. Without it the
+/// picture stops in a straight line beside the column, a bare strip the
+/// height of the photo next to it.
+///
+/// [child] is the picture: widened by the side insets the page has left to
+/// it, as [EdgeBleed] widens a row, and as tall as it is laid out at that
+/// width. [overlay] is what is drawn on it — a title, a page's dots, a
+/// button — and stays where the page's text is, clear of the column, as
+/// Apple keeps controls out of it. On a phone held upright, an iPad, or a
+/// pane away from the column, there are no side insets, and this is [child]
+/// with [overlay] over it.
+///
+/// It needs the page [EdgeBleed] does: side insets kept inside the scroll
+/// view, `SafeArea(left: false, right: false)` with the content padded by
+/// [EdgeBleed.sides].
+class HeroBleed extends StatelessWidget {
+  const HeroBleed({super.key, required this.child, this.overlay});
+
+  /// The picture.
+  final Widget child;
+
+  /// Drawn over the picture, inside the page's own width.
+  final Widget? overlay;
+
+  @override
+  Widget build(BuildContext context) {
+    final sides = EdgeBleed.sides(context);
+    final picture = sides.horizontal == 0
+        ? child
+        : _Bleed(
+            sides: sides,
+            // The picture is under the column now: it keeps no room for it.
+            child: MediaQuery.removePadding(
+              context: context,
+              removeLeft: true,
+              removeRight: true,
+              child: child,
+            ),
+          );
+    final overlay = this.overlay;
+    if (overlay == null) return picture;
+    return Stack(
+      clipBehavior: Clip.none,
+      // The picture as wide as it would be without the overlay.
+      fit: StackFit.passthrough,
+      children: [
+        picture,
+        Positioned.fill(
+          // Already clear of the column: a SafeArea in it adds nothing more.
+          child: MediaQuery.removePadding(
+            context: context,
+            removeLeft: true,
+            removeRight: true,
+            child: overlay,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// [child] widened by [sides] past both edges, and as tall as it is: in a
 /// column that scrolls the height on offer has no end, and a box that took
 /// it all (an `OverflowBox`) would have no size at all.

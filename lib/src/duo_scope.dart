@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'bar_edge.dart';
+import 'debug_overlay.dart';
 import 'design_size.dart';
 import 'duo_device.dart';
 
@@ -30,12 +31,15 @@ import 'duo_device.dart';
 ///   again when the window changes, so the Duo locks upright when it closes.
 ///   The iPhone's `UISupportedInterfaceOrientations` in `Info.plist` must
 ///   list the landscape ones too, or iOS never lets the open Duo turn.
+/// * With [debugShowRegions], it draws the fold, the camera and the column
+///   over the app ([DuoDebugOverlay]).
 class DuoScope extends StatefulWidget {
   const DuoScope({
     super.key,
     required this.child,
     this.minTopInset = 24,
     this.lockPhonesUpright = true,
+    this.debugShowRegions = false,
   });
 
   final Widget child;
@@ -47,11 +51,18 @@ class DuoScope extends StatefulWidget {
   /// Whether this sets the app's orientations by the size of the screen.
   final bool lockPhonesUpright;
 
+  /// Whether to draw what iOS reports over the app, to check a layout on the
+  /// simulator. Leave it off in a release.
+  final bool debugShowRegions;
+
   @override
   State<DuoScope> createState() => _DuoScopeState();
 }
 
 class _DuoScopeState extends State<DuoScope> {
+  /// Keeps the app where it is as what is around it changes: the room at
+  /// the top when the Duo opens or closes, the overlay turned on or off.
+  final _app = GlobalKey();
   List<DeviceOrientation>? _orientations;
   var _device = DuoDevice.unknown;
   StreamSubscription<DuoDevice>? _changes;
@@ -113,17 +124,21 @@ class _DuoScopeState extends State<DuoScope> {
   Widget build(BuildContext context) {
     final data = MediaQuery.of(context);
     final side = BarEdge.resolve(data.viewPadding, _device) != null;
+    final child = DuoDebugOverlay(
+      enabled: widget.debugShowRegions,
+      child: KeyedSubtree(key: _app, child: widget.child),
+    );
     return BarEdgeScope.of(
       data,
       device: _device,
       child: !side
-          ? widget.child
+          ? child
           : MediaQuery(
               data: data.copyWith(
                 padding: _withTopRoom(data.padding),
                 viewPadding: _withTopRoom(data.viewPadding),
               ),
-              child: widget.child,
+              child: child,
             ),
     );
   }

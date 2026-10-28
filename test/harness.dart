@@ -1,4 +1,5 @@
 import 'package:duo_layout/duo_layout.dart';
+import 'package:duo_layout/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -47,3 +48,26 @@ Widget rows() => ListView(
           SizedBox(height: 60, child: Text('Row $i')),
       ],
     );
+
+/// Pumps [home] in a [MaterialApp] in [simulator]'s window, under the scope
+/// `DuoScope` would give it there.
+Future<void> pumpIn(
+  WidgetTester tester,
+  DuoSimulator simulator,
+  Widget home, {
+  TextDirection direction = TextDirection.ltr,
+}) async {
+  tester.view
+    ..devicePixelRatio = 1
+    ..physicalSize = simulator.window;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(
+    MaterialApp(
+      builder: (context, child) => Directionality(
+        textDirection: direction,
+        child: simulator.scope(child: child!),
+      ),
+      home: home,
+    ),
+  );
+}

@@ -1,3 +1,32 @@
+## Unreleased
+
+* `showModalBottomSheetOffFold` and `SheetOffFold`: a bottom sheet kept off
+  the fold, under it when it runs across the screen and in the end half
+  beside it on a two-pane window. In Arabic the end half no longer keeps
+  room for a column down the other half.
+* `KeyboardAboveFold`: while the keyboard is up on the Duo open upright,
+  screens are told it reaches the fold, so the field being typed in stays
+  above the bend.
+* `HeroBleed`: a page's lead picture reaches under the status bar's column
+  to the edge of the glass, and what is drawn on it stays clear of it.
+* `PostureBuilder`: builds by how the Duo is held, and again only when that
+  changes, not on every step of the hinge.
+* `TabletopLayout`: what is watched on the upright half, what is touched on
+  the half on the table, while the Duo stands as a tabletop.
+* `package:duo_layout/testing.dart`: `DuoSimulator`, the simulator's window,
+  insets, fold and hinge for every way the Duo is held, and a `scope` to
+  test a layout in each.
+* `DuoDebugOverlay`, and `DuoScope(debugShowRegions: true)`: the fold, the
+  camera and the column drawn over the app, with the posture named.
+* `DuoScope` keeps the app under a `GlobalKey`, so nothing under it starts
+  over when what is around it changes.
+* CI: analyze and test on every push; the example built for iOS on a
+  release tag, or by hand.
+* iOS only: the example app has no Android project any more, and the README
+  no longer plans Android foldables. On Android the widgets still build as
+  before, with no fold and no column, so an app that also ships there needs
+  no change.
+
 ## 0.3.0
 
 * `ListDetail`: a list beside the item picked from it on a wide window, the
