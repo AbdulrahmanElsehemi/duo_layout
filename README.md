@@ -1,4 +1,4 @@
-# duo_layout
+# iphone_duo
 
 **iPhone Duo layouts for Flutter, drawn the way Apple's Human Interface
 Guidelines draw them.**
@@ -61,9 +61,9 @@ So on the outer screen, and on the inner one held on its side, the status bar
 is **a column down the side** instead of a strip along the top. An app built
 for a phone doesn't know that:
 
-![A phone layout next to the same app with duo_layout](doc/images/before_after.png)
+![A phone layout next to the same app with iphone_duo](doc/images/before_after.png)
 
-| A phone layout | With duo_layout |
+| A phone layout | With iphone_duo |
 |---|---|
 | An empty column takes 18% of the width | The column holds the toolbar and the tabs, as in iOS |
 | A bottom tab bar eats into an already short screen | The tabs float in a capsule down the side |
@@ -150,22 +150,22 @@ And there are problems you can't see in that picture:
   the right `designSize` for every window.
 - **No dependencies** beyond Flutter.
 - **Tested.** 88 tests, and an example app to try on the simulator.
-- **Test helpers.** `package:duo_layout/testing.dart` has the simulator's
+- **Test helpers.** `package:iphone_duo/testing.dart` has the simulator's
   numbers for every way the Duo is held, so your tests don't copy them.
 - **A debug overlay.** `DuoScope(debugShowRegions: true)` draws the fold,
   the camera and the column over your app.
 
 ## Install
 
-The repository is private, so you need read access to it on GitHub. So does
-anyone, or any CI, that builds your app.
+```bash
+flutter pub add iphone_duo
+```
+
+or in `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  duo_layout:
-    git:
-      url: https://github.com/AbdulrahmanElsehemi/duo_layout.git
-      ref: v0.4.0
+  iphone_duo: ^0.5.0
 ```
 
 Then run `flutter pub get`, and `pod install` in `ios/` if your app uses
@@ -174,8 +174,9 @@ CocoaPods. With Swift Package Manager
 run: the plugin ships a `Package.swift`, and its privacy manifest comes with
 it either way.
 
-Pin `ref` to a tag, not a branch. Then a new commit never changes your app
-until you move the tag yourself.
+Up to 0.4.0 the package was called `duo_layout` and came from Git. The
+name on pub.dev is `iphone_duo`: change the dependency, and
+`package:duo_layout/duo_layout.dart` to `package:iphone_duo/iphone_duo.dart`.
 
 It needs Flutter 3.44 or later.
 
@@ -189,7 +190,7 @@ package reads the safe area instead.
 **1. Put `DuoScope` above the navigator,** in `MaterialApp.builder`:
 
 ```dart
-import 'package:duo_layout/duo_layout.dart';
+import 'package:iphone_duo/iphone_duo.dart';
 
 MaterialApp(
   builder: (context, child) => DuoScope(child: child!),
@@ -823,7 +824,7 @@ other way. In `ios/Runner/Base.lproj/Main.storyboard`, set the root's class:
 Or in Xcode: select the Flutter View Controller, and in the Identity
 inspector set Class to `DuoFlutterViewController`, with no module. If the
 app creates its view controller in code, create a `DuoFlutterViewController`
-there instead (`import duo_layout`).
+there instead (`import iphone_duo`).
 
 Without it, or before iOS 27.1, the screen keeps the column, and a debug
 build says why once.
@@ -1004,7 +1005,7 @@ the Duo opens or closes. Copy this widget into your app, and use it in place
 of `ScreenUtilInit` above your `MaterialApp`:
 
 ```dart
-import 'package:duo_layout/duo_layout.dart';
+import 'package:iphone_duo/iphone_duo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -1071,7 +1072,7 @@ You don't need the simulator to test the Duo.
 
 ### The simulator's numbers
 
-`package:duo_layout/testing.dart` has the window, the insets and iOS's
+`package:iphone_duo/testing.dart` has the window, the insets and iOS's
 answer (the column, the hinge, the fold) for every way the Duo is held, as
 the iPhone Duo simulator reports them:
 
@@ -1093,7 +1094,7 @@ The fold is 40 points with margins of 20: across at
 the test's view the same size, so the layout fills it:
 
 ```dart
-import 'package:duo_layout/testing.dart';
+import 'package:iphone_duo/testing.dart';
 
 for (final duo in DuoSimulator.all) {
   testWidgets('the photos never sit on the fold: $duo', (tester) async {
@@ -1164,9 +1165,9 @@ final device = {
   'occlusions': [],
 };
 final messenger = tester.binding.defaultBinaryMessenger;
-messenger.setMockMethodCallHandler(const MethodChannel('duo_layout'), (_) async => device);
+messenger.setMockMethodCallHandler(const MethodChannel('iphone_duo'), (_) async => device);
 messenger.setMockStreamHandler(
-  const EventChannel('duo_layout/changes'),
+  const EventChannel('iphone_duo/changes'),
   MockStreamHandler.inline(onListen: (_, events) => events.success(device)),
 );
 // ... pump, expect ...
@@ -1278,8 +1279,7 @@ Yes. `SideTabBar` only replaces it on the Duo. Everywhere else your own bar
 shows, as before.
 
 **How do I update?**
-Tag a new version in this repository, then move `ref` in your app's
-`pubspec.yaml` and run `flutter pub get`.
+`flutter pub upgrade iphone_duo`. The CHANGELOG says what changed.
 
 ## Limits
 

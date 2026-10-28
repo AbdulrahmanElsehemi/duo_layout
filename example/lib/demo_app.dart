@@ -1,4 +1,4 @@
-import 'package:duo_layout/duo_layout.dart';
+import 'package:iphone_duo/iphone_duo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -25,7 +25,7 @@ class DemoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'duo_layout',
+      title: 'iphone_duo',
       debugShowCheckedModeBanner: false,
       locale: locale,
       supportedLocales: const [Locale('en'), Locale('ar')],

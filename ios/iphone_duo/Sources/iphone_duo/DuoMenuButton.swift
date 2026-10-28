@@ -35,7 +35,7 @@ final class DuoMenuButton: NSObject, FlutterPlatformView {
 
   init(frame: CGRect, viewId: Int64, arguments: Any?, messenger: FlutterBinaryMessenger) {
     channel = FlutterMethodChannel(
-      name: "duo_layout/menu_button_\(viewId)", binaryMessenger: messenger)
+      name: "iphone_duo/menu_button_\(viewId)", binaryMessenger: messenger)
     super.init()
     button.frame = frame
     button.backgroundColor = .clear

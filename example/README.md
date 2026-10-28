@@ -1,6 +1,6 @@
-# duo_layout example
+# iphone_duo example
 
-A small shop with four tabs, built with every widget in `duo_layout`. Run it
+A small shop with four tabs, built with every widget in `iphone_duo`. Run it
 on an iPhone, an iPad and the iPhone Duo simulator — closed, open, and open on
 its side — to see the same screens change.
 

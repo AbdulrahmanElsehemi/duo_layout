@@ -5,11 +5,11 @@
 // They load San Francisco from macOS, so they are drawn on a Mac.
 import 'dart:io';
 
-import 'package:duo_layout/duo_layout.dart';
-import 'package:duo_layout_example/demo_app.dart';
-import 'package:duo_layout_example/pages/home_page.dart';
-import 'package:duo_layout_example/data.dart';
-import 'package:duo_layout_example/pages/widgets.dart';
+import 'package:iphone_duo/iphone_duo.dart';
+import 'package:iphone_duo_example/demo_app.dart';
+import 'package:iphone_duo_example/pages/home_page.dart';
+import 'package:iphone_duo_example/data.dart';
+import 'package:iphone_duo_example/pages/widgets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -384,7 +384,7 @@ void main() {
       'before_after',
       canvas([
         device(outer, naiveApp(), label: 'A phone layout'),
-        device(outer, app(), label: 'With duo_layout'),
+        device(outer, app(), label: 'With iphone_duo'),
       ]),
       size: room,
     );

@@ -1,5 +1,5 @@
-import 'package:duo_layout/duo_layout.dart';
-import 'package:duo_layout/testing.dart';
+import 'package:iphone_duo/iphone_duo.dart';
+import 'package:iphone_duo/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

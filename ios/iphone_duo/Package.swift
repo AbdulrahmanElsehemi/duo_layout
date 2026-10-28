@@ -4,19 +4,19 @@
 import PackageDescription
 
 let package = Package(
-    name: "duo_layout",
+    name: "iphone_duo",
     platforms: [
         .iOS("15.0")
     ],
     products: [
-        .library(name: "duo-layout", targets: ["duo_layout"])
+        .library(name: "iphone-duo", targets: ["iphone_duo"])
     ],
     dependencies: [
         .package(name: "FlutterFramework", path: "../FlutterFramework")
     ],
     targets: [
         .target(
-            name: "duo_layout",
+            name: "iphone_duo",
             dependencies: [
                 .product(name: "FlutterFramework", package: "FlutterFramework")
             ],

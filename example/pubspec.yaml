@@ -1,5 +1,5 @@
-name: duo_layout_example
-description: "duo_layout example: a small shop on a phone, an iPad and the iPhone Duo."
+name: iphone_duo_example
+description: "iphone_duo example: a small shop on a phone, an iPad and the iPhone Duo."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -28,7 +28,7 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  duo_layout:
+  iphone_duo:
     path: ../
 
   # The following adds the Cupertino Icons font to your application.

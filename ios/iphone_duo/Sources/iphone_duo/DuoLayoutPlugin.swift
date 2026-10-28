@@ -1,22 +1,22 @@
 import Flutter
 import UIKit
 
-/// Tells duo_layout what iOS knows about the iPhone Duo, which Flutter does
+/// Tells iphone_duo what iOS knows about the iPhone Duo, which Flutter does
 /// not pass on by itself: the side the status bar runs down
 /// (`verticalBarEdge`), the hinge, and the regions of the glass taken by the
 /// fold (`.division`) and by the camera and status bar (`.occlusion`).
 ///
-/// `snapshot` answers with all of it; `duo_layout/changes` sends it again
+/// `snapshot` answers with all of it; `iphone_duo/changes` sends it again
 /// whenever the hinge moves or the bar changes side. The regions move with
 /// the window, so the Dart side asks for a snapshot when the window changes.
 ///
 /// `setVerticalBarDisabled` keeps the status bar and the bars across the top
 /// on the screen showing (`preferredVerticalBarBehavior`), through the app's
-/// root `DuoFlutterViewController`. `duo_layout/menu_button` is the "…" at
+/// root `DuoFlutterViewController`. `iphone_duo/menu_button` is the "…" at
 /// the foot of the column: a native button that opens iOS's own menu.
 ///
 /// The APIs are in the iOS 27.1 SDK. Built with an older Xcode, or run on an
-/// older iOS, the answer is `available: false` and duo_layout reads the safe
+/// older iOS, the answer is `available: false` and iphone_duo reads the safe
 /// area instead.
 public class DuoLayoutPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
   private weak var registrar: FlutterPluginRegistrar?
@@ -31,14 +31,14 @@ public class DuoLayoutPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
     let instance = DuoLayoutPlugin()
     instance.registrar = registrar
     let methods = FlutterMethodChannel(
-      name: "duo_layout", binaryMessenger: registrar.messenger())
+      name: "iphone_duo", binaryMessenger: registrar.messenger())
     registrar.addMethodCallDelegate(instance, channel: methods)
     let changes = FlutterEventChannel(
-      name: "duo_layout/changes", binaryMessenger: registrar.messenger())
+      name: "iphone_duo/changes", binaryMessenger: registrar.messenger())
     changes.setStreamHandler(instance)
     registrar.register(
       DuoMenuButtonFactory(messenger: registrar.messenger()),
-      withId: "duo_layout/menu_button")
+      withId: "iphone_duo/menu_button")
     // A storyboard names DuoFlutterViewController only as a string. Linked
     // statically (Swift Package Manager), a class nothing in the code names
     // can be left out, and the app opens on an empty view controller.

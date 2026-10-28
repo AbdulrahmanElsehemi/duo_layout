@@ -74,7 +74,7 @@ class SideToolbarMenuButton extends StatefulWidget {
       DuoDevice.regionsOf(context).fromIOS;
 
   /// The platform view the plugin registers.
-  static const viewType = 'duo_layout/menu_button';
+  static const viewType = 'iphone_duo/menu_button';
 
   @override
   State<SideToolbarMenuButton> createState() => _SideToolbarMenuButtonState();

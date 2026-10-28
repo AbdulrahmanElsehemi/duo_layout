@@ -1,5 +1,9 @@
-## Unreleased
+## 0.5.0
 
+* Published on pub.dev as `iphone_duo`: the name `duo_layout` there is
+  someone else's. Import `package:iphone_duo/iphone_duo.dart` and
+  `package:iphone_duo/testing.dart`; the plugin's channels and its Swift
+  module are `iphone_duo` too.
 * `DuoAppBar(menu:, columnLimit:)` and `SideToolbarMenuButton`: past three
   actions, the rest go behind a "…" at the foot of the column, in iOS's own
   pull-down menu (`UIMenu`); Flutter's `MenuAnchor` in the bar across the

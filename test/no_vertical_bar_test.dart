@@ -1,5 +1,5 @@
-import 'package:duo_layout/duo_layout.dart';
-import 'package:duo_layout/testing.dart';
+import 'package:iphone_duo/iphone_duo.dart';
+import 'package:iphone_duo/testing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,7 +16,7 @@ void main() {
     asked = [];
     taken = true;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(const MethodChannel('duo_layout'),
+        .setMockMethodCallHandler(const MethodChannel('iphone_duo'),
             (call) async {
       if (call.method == 'setVerticalBarDisabled') {
         asked.add(call.arguments as bool);
@@ -28,7 +28,7 @@ void main() {
 
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(const MethodChannel('duo_layout'), null);
+        .setMockMethodCallHandler(const MethodChannel('iphone_duo'), null);
   });
 
   Future<void> push(WidgetTester tester, Widget page) async {

@@ -241,8 +241,8 @@ class DuoDevice {
 
 /// The plugin's channel to iOS.
 abstract final class DuoPlatform {
-  static const _methods = MethodChannel('duo_layout');
-  static const _changes = EventChannel('duo_layout/changes');
+  static const _methods = MethodChannel('iphone_duo');
+  static const _changes = EventChannel('iphone_duo/changes');
 
   static bool get _onIOS =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;

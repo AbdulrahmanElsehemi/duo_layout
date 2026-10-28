@@ -1,4 +1,4 @@
-import 'package:duo_layout/duo_layout.dart';
+import 'package:iphone_duo/iphone_duo.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -99,8 +99,8 @@ void main() {
   });
 
   group('DuoScope on iOS', () {
-    const methods = MethodChannel('duo_layout');
-    const changes = EventChannel('duo_layout/changes');
+    const methods = MethodChannel('iphone_duo');
+    const changes = EventChannel('iphone_duo/changes');
 
     Future<void> answer(
       WidgetTester tester,

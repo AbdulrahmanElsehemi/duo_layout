@@ -3,7 +3,7 @@
 /// held, and a [BarEdgeScope] built from them.
 ///
 /// ```dart
-/// import 'package:duo_layout/testing.dart';
+/// import 'package:iphone_duo/testing.dart';
 ///
 /// testWidgets('one mattress a half', (tester) async {
 ///   await tester.pumpWidget(

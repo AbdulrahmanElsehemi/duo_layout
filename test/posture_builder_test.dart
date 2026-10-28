@@ -1,4 +1,4 @@
-import 'package:duo_layout/duo_layout.dart';
+import 'package:iphone_duo/iphone_duo.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
